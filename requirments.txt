@@ -1,4 +1,4 @@
-﻿supabase
+
 python-telegram-bot
 groq
 deepgram-sdk
@@ -17,3 +17,4 @@ seaborn
 stripe
 python-dateutil
 python-telegram-bot[job-queue]
+﻿supabase
