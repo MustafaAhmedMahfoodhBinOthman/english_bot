@@ -15,7 +15,7 @@ from telegram.error import Forbidden, TelegramError
 from datetime import datetime, timedelta
 from flask import Flask, app
 from telegram.request import HTTPXRequest
-from groq import Groq
+# from groq import Groq
 from deepgram import DeepgramClient, PrerecordedOptions, SpeakOptions
 from dotenv import load_dotenv
 from functools import partial
