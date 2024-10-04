@@ -1,20 +1,18 @@
 
 python-telegram-bot
-groq
+
 deepgram-sdk
 Pillow
-matplotlib
-numpy
+
 google.generativeai
-pandas
+
 openai
 python-dotenv
 unifyai
-youtube-search
+
 Flask
-scipy
-seaborn
-stripe
+
+
 python-dateutil
 python-telegram-bot[job-queue]
 ﻿supabase
