@@ -1,6 +1,6 @@
 
 python-telegram-bot
-
+supabase
 deepgram-sdk
 Pillow
 
@@ -15,4 +15,4 @@ Flask
 
 python-dateutil
 python-telegram-bot[job-queue]
-﻿supabase
+
