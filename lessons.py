@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 LESSONS = {
-    "Tenses": {
-        "Present Tense": {
-            "Present Simple": {
+    "الأزمنة": {
+        "زمن المضارع": {
+            "المضارع البسيط": {
                 "content": """
 زمن المضارع البسيط هو من أهم الأزمنة في اللغة الإنجليزية، ويستخدم للتعبير عن الحقائق، العادات، والروتين اليومي.
 في هذا الدرس، سنتعلم كيفية تكوين جمل في المضارع البسيط، وكيفية استخدامها بشكل صحيح.
@@ -73,7 +73,7 @@ LESSONS = {
                 "youtube_link": "https://youtu.be/rlbFDiuwlF0?feature=shared",
                 "file_path": "path/to/present_simple.pdf"
             },
-            "Present Continuous": {
+            "المضارع المستمر": {
                 "content": """
 زمن المضارع المستمر (Present Continuous) يُستخدم للتعبير عن الأفعال التي تحدث الآن، أو في هذه الفترة الزمنية.
 
@@ -128,7 +128,7 @@ LESSONS = {
                 "youtube_link": "https://youtu.be/ZqQG54yds-Y?feature=shared",
                 "file_path": "path/to/present_continuous.pdf"
             },
-            "Present Perfect": {
+            "المضارع التام": {
                 "content": """
 زمن المضارع التام (Present Perfect) يُستخدم للتعبير عن أحداث بدأت في الماضي ولها علاقة بالحاضر.  
 
@@ -183,7 +183,7 @@ LESSONS = {
                 "youtube_link": "https://youtu.be/cfYSzcZSw3U?feature=shared",
                 "file_path": "path/to/present_perfect.pdf"
             },
-            "Present Perfect Continuous": {
+            "المضارع التام المستمر": {
                 "content": """
 زمن المضارع التام المستمر (Present Perfect Continuous) يُستخدم للتعبير عن أحداث بدأت في الماضي واستمرت لفترة من الزمن، وربما لا تزال مستمرة حتى الآن.  يركز هذا الزمن على **مدة** استمرار الحدث.
 
@@ -235,9 +235,9 @@ LESSONS = {
                 "file_path": "path/to/present_perfect_continuous.pdf"
             },
         },
-     "Past Tense":{
+     "زمن الماضي":{
          
-         "Past Simple":{
+         "الماضي البسيط":{
             "content": """
 زمن الماضي البسيط (Past Simple) يُستخدم للتعبير عن أحداث انتهت في الماضي.
 
@@ -289,7 +289,7 @@ LESSONS = {
             "youtube_link": "https://youtu.be/5TjpEcrNbCc?feature=shared",
             "file_path": "path/to/nouns.pdf"
          },
-         "Past Continuous":{
+         "الماضي المستمر":{
             "content": """زمن الماضي المستمر (Past Continuous) يُستخدم للتعبير عن أحداث كانت مستمرة في وقت محدد في الماضي.
 
 تركيب الجملة:
@@ -333,7 +333,7 @@ LESSONS = {
             "youtube_link": "https://youtu.be/oBzkMfEXj1s?feature=shared",
             "file_path": "path/to/nouns.pdf"
          },
-         "Past Perfect":{
+         "الماضي التام":{
             "content": """
 زمن الماضي التام (Past Perfect) يُستخدم للتعبير عن حدث وقع **قبل** حدث آخر في الماضي.  يُستخدم لترتيب الأحداث في الماضي عندما يكون هناك حدثان أو أكثر.
 
@@ -376,7 +376,7 @@ LESSONS = {
             "youtube_link": "https://youtu.be/8QehpHhgN04?feature=shared",
             "file_path": "path/to/nouns.pdf"
          },
-         "Past Perfect Continuous":{
+         "الماضي التام المستمر":{
             "content": """
 زمن الماضي التام المستمر (Past Perfect Continuous) يُستخدم للتعبير عن حدث كان مستمرًا لفترة من الزمن **قبل** حدوث حدث آخر في الماضي. يركز هذا الزمن على **مدة** استمرار الحدث قبل وقوع الحدث الآخر.
 
@@ -424,8 +424,8 @@ LESSONS = {
          },
          
          } ,  # ... other tense categories
-     "Future Tense":{
-             "Future Simple":{
+     "زمن المستقبل":{
+             "المستقبل البسيط":{
                 "content": """
 زمن المستقبل البسيط (Future Simple) يُستخدم للتعبير عن أحداث ستقع في المستقبل.
 
@@ -481,7 +481,7 @@ LESSONS = {
                 "youtube_link": "https://youtu.be/TDh-m2xLyg8?feature=shared",
                 "file_path": "path/to/future_simple.pdf"
              },
-             "Future Continuous":{
+             "المستقبل المستمر":{
                 "content": """
 زمن المستقبل المستمر (Future Continuous) يُستخدم للتعبير عن حدث **سيكون مستمرًا** في وقت محدد في المستقبل.
 
@@ -527,7 +527,7 @@ LESSONS = {
                 "youtube_link": "https://youtu.be/Q2Vkhcvq9uw?feature=shared",
                 "file_path": "path/to/future_continuous.pdf"
              },
-             "Future Perfect":{
+             "المستقبل التام":{
                 "content": """
 زمن المستقبل التام (Future Perfect) يُستخدم للتعبير عن حدث **سينتهي** قبل وقت محدد في المستقبل.
 
@@ -569,7 +569,7 @@ LESSONS = {
                 "youtube_link": "https://youtu.be/Uu-u3gBSHzA?feature=shared",
                 "file_path": "path/to/future_perfect.pdf"
              },
-             "Future Perfect Continuous":{
+             "المستقبل التام المستمر":{
                 "content": """
 زمن المستقبل التام المستمر (Future Perfect Continuous) يُستخدم للتعبير عن حدث **سيكون قد استمر** لفترة معينة من الزمن حتى وقت محدد في المستقبل. يركز هذا الزمن على **مدة** استمرار الحدث حتى ذلك الوقت.
 
@@ -617,8 +617,8 @@ LESSONS = {
              }
          },   
     },
-    "Parts of Speech": {
-        "Nouns": {
+    "أجزاء الكلام": {
+        "الأسماء": {
             "content":  """
 الأسماء (Nouns) هي كلمات تُستخدم لتسمية الأشخاص، والأماكن، والأشياء، والأفكار، أو المفاهيم.  الأسماء جزء أساسي من أي جملة، فهي تُشكل أساس الجملة وتُحدد ما نتحدث عنه.
 
@@ -671,7 +671,7 @@ LESSONS = {
             "youtube_link": "https://youtu.be/3jxBPRsixs4?feature=shared",
             "file_path": "path/to/nouns.pdf"
         },
-        "Verbs": {
+        "الأفعال": {
             "content":  """
 الأفعال (Verbs) هي كلمات تُعبّر عن فعل أو حدث أو حالة.  الفعل هو الجزء الأساسي في الجملة، حيث يصف ما يقوم به الفاعل أو ما يحدث له.
 
@@ -721,7 +721,7 @@ LESSONS = {
             "youtube_link": "https://youtu.be/SsnGevphX6Q?feature=shared",
             "file_path": "path/to/verbs.pdf"
         },
-        "Adjectives": {
+        "الصفات": {
             "content": """
 الصفات (Adjectives) هي كلمات تُستخدم لوصف الأسماء، مما يُضيف معلومات وتفاصيل تُساعدنا على فهمها بشكل أفضل.  الصفات تُجيب على أسئلة مثل "ماذا؟" "كم؟" "أي؟".
 
@@ -783,7 +783,7 @@ LESSONS = {
             "youtube_link": "https://youtu.be/zP_m0L2e7d0?feature=shared",
             "file_path": "path/to/adjectives.pdf"
         },
-        "Adverbs": {
+        "الظرف-الحال": {
             "content": """
 الظروف (Adverbs) هي كلمات تُعدّل الأفعال، الصفات، أو ظروفًا أخرى. تُضيف الظروف معلومات عن كيفية، أين، متى، أو إلى أي مدى يحدث شيء ما.
 
@@ -833,7 +833,7 @@ LESSONS = {
             "youtube_link": "https://youtu.be/zP_m0L2e7d0?feature=shared",
             "file_path": "path/to/adverbs.pdf"
         },
-        "Pronouns": {
+        "الضمائر": {
              "content": """
 الضمائر (Pronouns) هي كلمات تُستخدم بدلاً من الأسماء لتجنب تكرارها.  تساعد الضمائر على جعل الجمل أكثر سلاسة ووضوحًا.
 
@@ -890,7 +890,7 @@ LESSONS = {
             "youtube_link": "https://youtu.be/_dS4YdYDw2w?feature=shared",
             "file_path": "path/to/pronouns.pdf"
         },
-        "Prepositions": {
+        "حروف الجر": {
             "content": """
 حروف الجر (Prepositions) هي كلمات تربط الأسماء أو الضمائر بكلمات أخرى في الجملة. تُبيّن حروف الجر علاقات مختلفة، مثل المكان، الزمان، الاتجاه، السبب، أو الملكية.  تُعدّ حروف الجر جزءًا أساسيًا من بنية الجملة في اللغة الإنجليزية.
 
@@ -932,7 +932,69 @@ LESSONS = {
             "youtube_link": "https://youtu.be/jbKuoUjg69A?feature=shared",
             "file_path": "path/to/prepositions.pdf"
         },
-        "Conjunctions": {
+        "أدوات التعريف": {
+            "content": """
+            أدوات التعريف هي كلمات تُستخدم قبل الأسماء لتعريفها أو لتحديد مدى معرفتنا بالشيء الذي نتحدث عنه. في اللغة الإنجليزية، هناك نوعان من أدوات التعريف: **المعرفة (Definite)** و **النكرة (Indefinite)**.
+
+    1. **أداة التعريف المعرفة (The Definite Article): "The"**
+    تُستخدم الأداة "the" مع الأسماء المحددة أو المعروفة لدى المتحدث والمستمع. يُمكن أن تكون هذه الأسماء شيئًا تم ذكره من قبل، أو شيئًا معروفًا للعالم بشكل عام، أو مُحدّدًا في سياق الجملة.
+
+    **أمثلة:**
+    1. The sun is shining.  
+       (الشمس مشرقة) - "the" تُستخدم هنا لأن الشمس شيء معروف لكل الناس.
+       
+    2. I saw the cat outside.  
+       (رأيت القطة في الخارج) - هنا "the" تُستخدم لأننا نتحدث عن قطة معينة تم ذكرها من قبل أو يعرفها المتحدث والمستمع.
+
+    2. **أداة التعريف النكرة (Indefinite Articles): "A" و "An"**
+    تُستخدم الأداتان "a" و "an" مع الأسماء غير المحددة أو التي يتم ذكرها لأول مرة. تُستخدم للإشارة إلى شيء غير محدد أو غير معروف لدى المستمع.
+
+    - **"A"** تُستخدم مع الأسماء التي تبدأ بحرف ساكن (consonant sound).
+    - **"An"** تُستخدم مع الأسماء التي تبدأ بحرف متحرك (vowel sound: a, e, i, o, u).
+
+    **أمثلة:**
+    1. I have a book.  
+       (لدي كتاب) - "a" تُستخدم هنا لأننا لا نعرف الكتاب بالتحديد. إنه مجرد كتاب عام.
+       
+    2. She ate an apple.  
+       (أكلت تفاحة) - "an" تُستخدم هنا لأن "apple" تبدأ بصوت متحرك.
+
+    3. **متى نستخدم "The" ومتى نستخدم "A/An":**
+    - **"The"** تُستخدم عندما يكون الاسم معروفًا أو محددًا.
+      
+      **مثال:**  
+      The car outside is mine.  
+      (السيارة في الخارج هي لي) - هنا نتحدث عن سيارة محددة يعرفها المستمع.
+      
+    - **"A" أو "An"** تُستخدم عندما نتحدث عن شيء غير محدد أو غير معروف لدى المستمع.
+
+      **مثال:**  
+      I saw a bird in the garden.  
+      (رأيت عصفورًا في الحديقة) - هنا نتحدث عن عصفور عام، وليس عصفورًا معينًا.
+
+    4. **ملاحظات هامة:**
+    - **"A" و "An"** تُستخدم فقط مع الأسماء المعدودة (Countable Nouns) المفردة. لا يمكن استخدامها مع الأسماء غير المعدودة (Uncountable Nouns).  
+      **مثال:** لا نقول "a water" بل "some water" أو "the water".
+      
+    - **"The"** يُمكن استخدامها مع الأسماء المعدودة وغير المعدودة على حدٍ سواء.
+      
+      **مثال:**  
+      The milk is fresh.  
+      (الحليب طازج) - هنا الحليب معروف بالنسبة لنا.
+      
+    - إذا كان الاسم لا يُشير إلى شيء محدد ولا يحتاج إلى التعريف، يُمكن عدم استخدام أي أداة تعريف.  
+      **مثال:**  
+      She loves reading books.  
+      (هي تحب قراءة الكتب) - هنا لا نحتاج إلى استخدام "the" أو "a" لأننا نتحدث بشكل عام عن الكتب.
+
+    **خلاصة:**
+    فهم استخدام أدوات التعريف في اللغة الإنجليزية مهم جدًا لبناء جمل صحيحة. "The" تُستخدم لتعريف الأشياء المعروفة أو المحددة، بينما "A" و "An" تُستخدم للإشارة إلى شيء غير معروف أو غير محدد. تذكر أن اختيار الأداة المناسبة يعتمد على السياق وعلى مدى معرفة المتحدث والمستمع بالاسم.
+    """,
+            "youtube_link": "https://youtu.be/y34h4TgxCPM?feature=shared",
+            "file_path": "path/to/prepositions.pdf"
+            
+        },
+        "حروف العطف": {
             "content": """
 حروف العطف (Conjunctions) هي كلمات تربط الكلمات، أو العبارات، أو الجمل.  تُساعد حروف العطف على تنظيم الأفكار وربطها معًا بشكل منطقي وواضح، مما يُحسّن من جودة الكتابة والتحدث.
 
@@ -974,7 +1036,7 @@ LESSONS = {
             "youtube_link": "https://youtu.be/Vv8X6aedUAo?feature=shared",
             "file_path": "path/to/articles.pdf"
         },
-        "Modal Verbs": {
+        "الأفعال الناقصة": {
             "content": """
 
 الأفعال الناقصة (Modal Verbs) هي أفعال مساعدة تُستخدم للتعبير عن مجموعة من المعاني، مثل القدرة، الإمكانية، الإذن، الالتزام، النصيحة، الطلب، الاحتمال، وغيرها.  تُستخدم الأفعال الناقصة دائمًا مع فعل رئيسي في المصدر (بدون to).
@@ -1039,7 +1101,7 @@ LESSONS = {
             "youtube_link": "https://youtu.be/RphqYnCdy7Q?feature=shared",
             "file_path": "path/to/modal_verbs.pdf"
         },
-        "If-Clauses": {
+        "الجمل الشرطية": {
             "content": """
 جُمَل الشرط (If-Clauses) تُستخدم للتعبير عن مواقف افتراضية أو شروط.  تتكون جملة الشرط من جُزأين: جملة الشرط (If-clause) والجملة الرئيسية (Main clause).
 
@@ -1104,8 +1166,8 @@ LESSONS = {
         },
         
     },
-    "Sentence Structure":{
-        "Simple Sentences":{
+    "تركيب الجملة":{
+        "الجمل البسيطة":{
             "content":  """
 الجملة البسيطة (Simple Sentence) هي جملة تحتوي على فاعل (Subject) واحد وفعل (Verb) واحد  وتُعبّر عن فكرة كاملة.  الجملة البسيطة هي أبسط أنواع الجمل في اللغة الإنجليزية.
 
@@ -1153,7 +1215,7 @@ LESSONS = {
             "youtube_link": "https://youtu.be/8yyD6JDiSVM?feature=shared",
             "file_path": "path/to/simple_sentences.pdf"
         },
-        "Compound Sentences":{
+        "الجمل المركبة":{
             "content": """
 الجمل المركبة (Compound Sentences):
 
@@ -1200,7 +1262,7 @@ LESSONS = {
             "youtube_link": "https://youtu.be/8yyD6JDiSVM?feature=shared",
             "file_path": "path/to/compound_sentences.pdf"
         },
-        "Complex Sentences":{
+        "الجمل المعقدة":{
             "content": """
 الجمل المركبة المعقدة (Complex Sentences):
 
@@ -1258,7 +1320,7 @@ LESSONS = {
             "youtube_link": "https://youtu.be/8yyD6JDiSVM?feature=shared",
             "file_path": "path/to/complex_sentences.pdf"
         },
-        "Compound-Complex Sentences":{
+        "الجمل المركبة المعقدة":{
             "content":  """
 الجمل المركبة المعقدة (Compound-Complex Sentences):
 
@@ -1332,8 +1394,8 @@ LESSONS = {
             "file_path": "path/to/compound-complex_sentences.pdf"
         }
     },
-    "Punctuation":{
-        "Commas":{
+    "علامات الترقيم":{
+        "(,) الفاصلة":{
             "content": """
 الفاصلة (Comma) هي علامة ترقيم صغيرة لكنها مهمة جدًا في اللغة الإنجليزية.  تُستخدم الفاصلة لفصل أجزاء الجملة، مما يُساعد على توضيح المعنى وجعل الكلام أكثر وضوحًا.  استخدام الفاصلة بشكل صحيح يُعطي الكلام سلاسة ويسهل فهمه.
 
@@ -1394,7 +1456,7 @@ LESSONS = {
             "youtube_link": "https://youtu.be/tNKBut921qM?feature=shared",
             "file_path": "path/to/commas.pdf"
         },
-        "Periods":{
+        "(.) نقطة نهاية الجملة":{
             "content": """
 النقطة (Period) هي علامة ترقيم أساسية في اللغة الإنجليزية تُستخدم لإنهاء الجمل الإخبارية أو التعجبية، ولإظهار اختصارات معينة.  استخدام النقطة بشكل صحيح يُحدد بنية الجملة ويُساعد على جعل الكلام أكثر وضوحًا وسهولة في الفهم.
 
@@ -1440,7 +1502,7 @@ LESSONS = {
             "youtube_link": "https://youtu.be/6DUdt5s9KO4?feature=shared",
             "file_path": "path/to/periods.pdf"
         },
-        "Question Marks":{
+        "(؟) علامة الإستفهام":{
             "content": """
 علامة الاستفهام (?) هي علامة ترقيم تُستخدم في نهاية الجمل الاستفهامية (Interrogative Sentences).  تُشير علامة الاستفهام إلى أن الجملة تُطرح سؤالًا، وتُطلب إجابة.  استخدام علامة الاستفهام بشكل صحيح ضروري لوضوح الكلام ولتجنب اللبس.
 
@@ -1486,7 +1548,7 @@ LESSONS = {
             "youtube_link": "https://youtu.be/1aa--jf4CjY?feature=shared",
             "file_path": "path/to/question_marks.pdf"
         },
-        "Exclamation Points":{
+        "(!) علامة التعجب":{
             "content":  """
 علامة التعجب (!) هي علامة ترقيم تُستخدم في نهاية الجمل التعجبية (Exclamatory Sentences) للتعبير عن عاطفة أو شعور قوي.  تُضيف علامة التعجب قوة وتأثيرًا للجملة، وتُشير إلى أن الكلام يُعبّر عن مشاعر قوية مثل الفرح، الحماس، الدهشة، الغضب، أو الحزن.
 
@@ -1534,7 +1596,7 @@ LESSONS = {
             "youtube_link": "https://youtu.be/1aa--jf4CjY?feature=shared",
             "file_path": "path/to/exclamation_points.pdf"
         },
-        "Semicolons":{
+        "(;) فاصلة منقوطة":{
             "content": """
 النقطة الفاصلة (Semicolon) هي علامة ترقيم تُستخدم لربط جملتين رئيسيتين مُستقلّتين (Independent Clauses) مترابطتين بشكل وثيق.  تُعتبر النقطة الفاصلة أقوى من الفاصلة، ولكنها أضعف من النقطة.  تُستخدم النقطة الفاصلة لربط الجمل التي لها علاقة وثيقة في المعنى، دون استخدام حروف العطف.
 
@@ -1580,7 +1642,7 @@ LESSONS = {
             "youtube_link": "https://youtu.be/P8UM5xv8644?feature=shared",
             "file_path": "path/to/semicolons.pdf"
         },
-        "Colons":{
+        "(:) نقطتان":{
             "content": """
 النقطتان (Colon) هما علامة ترقيم تُستخدم لإدخال شرح أو توضيح أو قائمة ما يليها.  تُشير النقطتان إلى أن هناك المزيد من المعلومات ستأتي بعدها، وهي تُستخدم لإضافة توضيح أو تفصيل لما سبقها.  تُستخدم النقطتان بشكل رئيسي لربط جملة رئيسية مع شرح أو قائمة.
 
@@ -1632,7 +1694,7 @@ LESSONS = {
             "youtube_link": "https://youtu.be/P8UM5xv8644?feature=shared",
             "file_path": "path/to/colons.pdf"
         },
-        "Quotation Marks":{
+        '("") علامة الاقتباس':{
             "content": """
 علامات التنصيص أو علامات الاقتباس (" ") تُستخدم في اللغة الإنجليزية لإظهار الكلام المباشر، أو الاقتباسات، أو العناوين.  استخدام علامات التنصيص بشكل صحيح ضروري لوضوح الكلام ولتجنّب اللبس.  هناك نوعان رئيسيان من علامات التنصيص: علامات التنصيص المزدوجة (" ") وعلامات التنصيص المفردة (' ').
 
@@ -1689,7 +1751,7 @@ LESSONS = {
             "youtube_link": "https://youtu.be/6LlcnJr-U4I?feature=shared",
             "file_path": "path/to/quotation_marks.pdf"
         },
-        "Dash":{
+        "(-) الشرطة":{
             "content": """
 الشرطة (-) هي علامة ترقيم تُستخدم في اللغة الإنجليزية لعدة أغراض، وهي تُضيف تأثيرات مُختلفة إلى الكلام المكتوب.  تُعتبر الشرطة أقوى من الفاصلة، ولكنها أضعف من النقطة.  هناك نوعان رئيسيان من الشرطة: الشرطة الطويلة (—) والشرطة القصيرة (-).  تختلف طريقة الكتابة والطباعة بينهما في بعض الأحيان، ولكنّ معناها يتشابه غالباً.
 
