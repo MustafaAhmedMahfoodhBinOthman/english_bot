@@ -36,7 +36,11 @@ import json
 import ast
 import random
 url: str = "https://ruzcfhezadjscqipzhiw.supabase.co"
-key: str=  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ1emNmaGV6YWRqc2NxaXB6aGl3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTcyNzYxNzAwMSwiZXhwIjoyMDQzMTkzMDAxfQ.zf536bzlbHZiLm-DcFBmjmZW52_QrVK8gT1uixfskKA"
+
+supabase_key = os.getenv('SUPABASE_KEY')
+
+key: str= supabase_key
+
 supabase: Client = create_client(url, key)
 # Telegram bot token
 BOT_TOKEN = os.getenv('BOT_TOKEN')
@@ -74,8 +78,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not user_data.data:
         # Insert basic user info into the database
         await supabase_insert("users", {"user_id": user_id, "username": username})
-        await ask_preferred_accent(update, context)
+        # await ask_preferred_accent(update, context)
+        await send_main_menu(update, context)
     else:
+        context.user_data.clear()
         await remove_keyboard(update,context)
         await send_main_menu(update, context)
 async def remove_keyboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -156,7 +162,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             else:
                 await context.bot.send_message(
                     chat_id=update.effective_chat.id,
-                    text="You can send more text or images for grammar checking. Or, if you're done, you can return to the main menu."
+                    text="يمكنك إرسال المزيد من النصوص أو الصور لتصحيحها. أو إذا انتهيت، يمكنك العودة إلى القائمة الرئيسية."
                 )
             context.user_data['mode'] = 'grammar_check'
         elif query.data == 'return_main_menu':
@@ -199,7 +205,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 print("word_know",word)
                 
                 
-                await context.bot.send_message(chat_id=update.effective_chat.id, text=f"Great! You know the word '{word}'. Let's move to the next word.")
+                await context.bot.send_message(chat_id=update.effective_chat.id, text=f"رائع! أنت تعرف الكلمة '{word}'. دعنا ننتقل إلى الكلمة التالية.")
                 user_data = await supabase_select("users", "vocab_know", "user_id", user_id)
                 vocab_know = set(user_data.data[0]['vocab_know']) if user_data.data and user_data.data[0]['vocab_know'] else set()
                 vocab_know.add(word)
@@ -217,29 +223,32 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 await supabase_update("users", {"vocab_dont_know": list(vocab_dont_know)}, "user_id", user_id)
                 # Get word definition using LLM
                 prompt = f"You are English teacher and your task is to provide a simple definition including the meaning and an example sentence in English for the word '{word}': follow this template the word:\n its most common meaning/s in Arabic 4 maximum \n\n (Definition: write it in English and translate it to Arabic. do not forget to translate it to arabic) \n\n 1 or 2 Examples: in English \n only this do not write anything else, you should organize the text and make it readable in telegram and do not forget include the Arabic text without the way of pronounce it in english just the arabic text  and you should provide accurate result"
+                prompt += f"to make it looks better and more organized you can use HTML style format <strong>bold</strong> for bold text this for the definition  , <ins>underline</ins> for underline text this for the meaning in Arabic and <blockquote> </blockquote> for examples also make it bold the examples\n\n please make sure to use them properly "
+                await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="TYPING")
                 definition = await unify(prompt)
                 keyboard = [
-                    [InlineKeyboardButton("Next word", callback_data="vocab_next"),InlineKeyboardButton("Stop", callback_data="vocab_stop")],
+                    [InlineKeyboardButton("الكلمة التالية ⬅️", callback_data="vocab_next"),InlineKeyboardButton("إلغاء ❌", callback_data="vocab_stop")],
                 ]
                 reply_markup = InlineKeyboardMarkup(keyboard)
-                await context.bot.send_message(chat_id=update.effective_chat.id, text=f"{definition}", reply_markup=reply_markup)
+                await context.bot.send_message(chat_id=update.effective_chat.id, text=f"{definition}", reply_markup=reply_markup,parse_mode="HTML")
             elif action == 'next':
                 await remove_keyboard(update,context)
                 await vocabulary_flashcards(update, context)
             elif action == 'stop':
                 await remove_keyboard(update,context)
-                await context.bot.send_message(chat_id=update.effective_chat.id, text="Vocabulary practice stopped. You can start again anytime!")
+                # await send_main_menu(update, context)
+                # await context.bot.send_message(chat_id=update.effective_chat.id, text="Vocabulary practice stopped. You can start again anytime!")
                 # await query.edit_message_text("Vocabulary practice stopped. You can start again anytime!")
                 await send_main_menu(update, context)
             elif action == 'change':
                 await remove_keyboard(update,context)
                 keyboard = [
-                    [InlineKeyboardButton("Simple", callback_data="change_level_simple")],
-                    [InlineKeyboardButton("Medium", callback_data="change_level_medium")],
-                    [InlineKeyboardButton("Hard", callback_data="change_level_hard")]
+                    [InlineKeyboardButton("سهلة (A1 - A2)", callback_data="change_level_simple")],
+                    [InlineKeyboardButton("متوسطة (B1 - B2)", callback_data="change_level_medium")],
+                    [InlineKeyboardButton("صعبة (B2 - C1)", callback_data="change_level_hard")]
                 ]
                 reply_markup = InlineKeyboardMarkup(keyboard)
-                await context.bot.send_message(chat_id=update.effective_chat.id, text="Choose your preferred vocabulary level:", reply_markup=reply_markup) 
+                await context.bot.send_message(chat_id=update.effective_chat.id, text="اختر مستوى صعوبة المفردات:", reply_markup=reply_markup) 
                 # await query.edit_message_text(
                 #     "Choose your preferred vocabulary level:",
                     #     reply_markup=reply_markup
@@ -257,11 +266,13 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             elif action == 'stop':
                 await remove_keyboard(update,context)
                 context.user_data.pop('word_recap_session', None)
-                await context.bot.send_message(chat_id=update.effective_chat.id, text="Vocabulary recap stopped. You can start again anytime!")
+                # await context.bot.send_message(chat_id=update.effective_chat.id, text="Vocabulary recap stopped. You can start again anytime!")
                 await send_main_menu(update, context)
-        
-        else:
-            await edit_message_with_fallback(update, context, "I'm sorry, I didn't understand that command.")
+        elif data == "try_again":
+            await remove_keyboard(update,context)
+            await send_main_menu(update,context)
+        # else:
+        #     await edit_message_with_fallback(update, context, "I'm sorry, I didn't understand that command.")
     
     except Exception as e:
         error_message = f"An error occurred in button_handler: {str(e)}"
@@ -275,7 +286,7 @@ async def pronunciation_next(update: Update, context: ContextTypes.DEFAULT_TYPE)
 async def pronunciation_get(update: Update, context: ContextTypes.DEFAULT_TYPE):
     current_sentence = context.user_data.get('current_sentence')
     if not current_sentence:
-        await update.callback_query.edit_message_text("I'm sorry, I don't have a sentence for you to practice. Let's start over.")
+        await update.callback_query.edit_message_text("آسف ليس لدي جملة للتدرب عليها حالياً، دعنا نبدأ من جديد")
         await pronunciation_practice_start(update, context)
         return
 
@@ -284,16 +295,17 @@ async def pronunciation_get(update: Update, context: ContextTypes.DEFAULT_TYPE):
     preferred_accent = user_data.data[0]['preferred_accent'] if user_data.data else "American"
 
     if preferred_accent == "American":
-        preferred_accent = "Scarlett"
+        preferred_accent = "Dan"
+        await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="RECORD_VOICE")
         audio_file = await convert_text_to_audio(current_sentence, preferred_accent)
     elif preferred_accent == "British":
         preferred_accent = "aura-athena-en"
         audio_file = await deepgram_tts(current_sentence, preferred_accent)
 
     keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton("Try Again", callback_data='pronunciation_try_again'),
-         InlineKeyboardButton("Next", callback_data='pronunciation_next')],
-        [InlineKeyboardButton("stop", callback_data='pronunciation_stop')]
+        [InlineKeyboardButton("حاول مرة أخرى 🔁", callback_data='pronunciation_try_again'),
+         InlineKeyboardButton("التالي ⬅️", callback_data='pronunciation_next')],
+        [InlineKeyboardButton("إلغاء ❌", callback_data='pronunciation_stop')]
     ])
     try:
         await update.callback_query.message.reply_voice(audio_file)
@@ -305,14 +317,14 @@ async def pronunciation_get(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if os.path.exists(audio_file):
                 os.remove(audio_file) 
     await update.callback_query.message.reply_text(
-        "Here's the correct pronunciation. Would you like to try again or move to the next sentence?",
+        "هذا هو النطق الصحيح ✅، هل تريد المحاولة مرة أخرى أو الإنتقال إلى الكلمة/الجملة التالية؟",
         reply_markup=keyboard
     )
 
 async def pronunciation_try_again(update: Update, context: ContextTypes.DEFAULT_TYPE):
     current_sentence = context.user_data.get('current_sentence')
     await update.callback_query.edit_message_text(
-        f"Okay, let's try again. Please record yourself saying this sentence:\n\n{current_sentence}\n\nSend your voice message when you're ready."
+        f"حسنًا، لنحاول مرة أخرى. يُرجى تسجيل صوتك وأنت تقول هذه الجملة:\nn{current_sentence}\nn\أرسل رسالتك الصوتية عندما تكون مستعدًا."
     )
 async def dictionary_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = ReplyKeyboardMarkup([
@@ -320,7 +332,7 @@ async def dictionary_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [KeyboardButton("/stop")]
     ], resize_keyboard=True)
     await update.message.reply_text(
-        "Please enter a word or phrase (maximum 2 words) you'd like to look up:",
+        "أكتب الكلمة التي تريد البحث عنها في القاموس باللغة الإنجليزية (كلمتين حد أقصى)",
         reply_markup=keyboard
     )
     context.user_data['mode'] = 'dictionary'
@@ -331,54 +343,74 @@ async def dictionary_process(update: Update, context: ContextTypes.DEFAULT_TYPE)
         [KeyboardButton("/stop")]
     ], resize_keyboard=True)
     word = update.message.text.strip().lower()
+    # print("word",word)
+    
+    
+    
     if len(word.split()) > 2:
-        await update.message.reply_text("Please enter a maximum of 2 words.", reply_markup=keyboard)
+        await update.message.reply_text("الرجاء كتابة كلمتين كحد أقصى", reply_markup=keyboard)
         context.user_data['awaiting_word'] = True
         return
-
-    await update.message.reply_text("Processing your request...")
+    # Check if all characters are English letters or spaces
+    if not re.match(r'^[a-z\s]+$', word):
+        await update.message.reply_text("الرجاء إدخال الكلمة باللغة الإنجليزية فقط", reply_markup=keyboard)
+        context.user_data['awaiting_word'] = True
+        return
+    # await update.message.reply_text("الرجاء الإنتظار لحظات")
 
     prompt = f"""Task: you are experienced English teacher and your task is to provide a detailed explanation of the word or phrase '{word}' in both English and Arabic, simulating the depth and precision of a professional translator or a high-quality dictionary. Ensure the explanation is comprehensive and clear for language learners.
 
 Instructions:
 
-- Meaning (المعنى) : provide the most common meaning of the word or phrase in Arabic 4 maximum and 1 minimum only the meaning nothing else and should be the true meaning of the word.
+- <ins> Meaning (المعنى) : </ins> provide the most common meaning of the word or phrase in Arabic 4 maximum and 1 minimum only the meaning nothing else and should be the true meaning of the word.
 
-- Definition in English: Offer a precise, clear, and easy-to-understand definition of the word or phrase.
+- <ins> Definition in English: </ins> Offer a precise, clear, and easy-to-understand definition of the word or phrase.
 
-- (التعريف باللغة العربية): Translate the definition into fluent, accurate Arabic, ensuring that it conveys the same meaning and nuances as in English.
+- <ins> (التعريف باللغة العربية): </ins> Translate the definition into fluent, accurate Arabic, ensuring that it conveys the same meaning and nuances as in English.
 
-- Part of Speech (أجزاء الكلام): Identify all relevant parts of speech (e.g., noun, verb,adjective, adverb). For each part of speech, provide:
+- <ins> Word Family: </ins> List all relevant forms of the word, including:
+  • Verb: e.g., imagine
+  • Noun: e.g., imagination
+  • Adjective: e.g., imaginative
+  • Adverb: e.g., imaginatively
+  Include any additional derivatives or inflections if applicable (e.g., plural forms, comparative/superlative forms for adjectives, participles for verbs).
+  
+- <ins> Part of Speech (أجزاء الكلام): </ins> Identify all relevant parts of speech (e.g., noun, verb,adjective, adverb). For each part of speech, provide:
 
 
-- Definition in English: A specific definition related to that part of speech.
+- <ins> Definition in English: </ins> A specific definition related to that part of speech.
 
-- (التعريف باللغة العربية): A natural Arabic translation of the specific definition.
+- <ins> (التعريف باللغة العربية): </ins> A natural Arabic translation of the specific definition.
 
-- Example (مثال): Show how the word is used in a sentence only in english.
-- Usage Examples: Offer 5 contextual examples that illustrate the word/phrase being used in various sentences. Each sentence should be followed by its Arabic translation.
+- <ins> Example (مثال): </ins> Show how the word is used in a sentence only in english.
+- <ins> Usage Examples: </ins> Offer 5 contextual examples that illustrate the word/phrase being used in various sentences. Each sentence should be followed by its Arabic translation.
 for verbs include the other format of the word past, present(ing), and past participle and for Nouns include it in single and plural
 
-- phrasal verbs (الأفعال المركبة) if possible and their meaning and defination in Arabic with 1 example
-Synonyms and Antonyms:
+- <ins> phrasal verbs (الأفعال المركبة) if possible and their meaning and defination in Arabic with 1 example
 
-- Synonyms (المرادفات): List at least 3 synonyms of the word/phrase .
+- <ins> Synonyms (المرادفات): </ins> List at least 3 synonyms of the word/phrase .
 
-- Antonyms (المتضادات): List at least 3 antonyms.
+- <ins> Antonyms (المتضادات): </ins> List at least 3 antonyms (Note if the word does not have any antonyms do not write it).
 
 Ensure that both the English and Arabic explanations are easy to follow, accurate, and reflect the nuances of each language.
-Focus on clarity and readability, making it suitable for language learners at various levels."""
+Focus on clarity and readability, making it suitable for language learners at various levels.
 
+do not include * or # in the text 
+
+"""
+    prompt += f"\n\nto make it looks better and more organized you can use HTML style format <strong>bold</strong> for bold text this for the definition  , <ins>underline</ins> for underline text this for the meaning in Arabic and titles ,<blockquote> </blockquote> for examples and make sure you accurtlly do that for the examples in English\n\n please make sure to use them properly "
     try:
+        await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="TYPING")
         dictionary_content = await unify(prompt)
-        await update.message.reply_text(dictionary_content)
+        await update.message.reply_text(dictionary_content,parse_mode="HTML")
         
         user_id = update.effective_user.id
         user_data = await supabase_select("users", "preferred_accent", "user_id", user_id)
         preferred_accent = user_data.data[0]['preferred_accent'] if user_data.data else "American"
         if preferred_accent == "American":
-            preferred_accent = "Scarlett"
-            audio_file = await convert_text_to_audio(word, preferred_accent)
+            preferred_accent = "Dan"
+            await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="RECORD_VOICE")
+            audio_file = await convert_text_to_audio(word, "Dan")
         elif preferred_accent == "British":
             preferred_accent = "aura-athena-en"
             audio_file = await deepgram_tts(word, preferred_accent)
@@ -393,7 +425,7 @@ Focus on clarity and readability, making it suitable for language learners at va
             if os.path.exists(audio_file):
                 os.remove(audio_file)
 
-        await update.message.reply_text("Enter another word or /stop to exit Dictionary mode.", reply_markup=keyboard)
+        await update.message.reply_text("أبحث عن كلمة أخرى أو أضغط (/stop) للعودة للقائمة الرئيسية", reply_markup=keyboard)
         context.user_data['awaiting_word'] = True
         # user_id = update.effective_user.id
         user_data = await supabase_select("users", "vocab_know", "user_id", user_id)
@@ -411,65 +443,22 @@ def setup_handlers(application):
 
 async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE, error_message: str):
     print(f"ID: {update.effective_user.id} Username: {update.effective_user.username} | {error_message}")
-    issue_message = "🚨 I'm sorry; there's an issue with the bot. Please try again, and if the problem persists, send me a message at @ielts_pathway."
+    issue_message = "آسف هناك مشكلة في البوت حاليا الرجاء المحاولة مرة أخرى"
     userID = update.effective_user.id
-    keyboard = [[InlineKeyboardButton("Try Again 🔁", callback_data=f"{userID}try_again")],
-                [InlineKeyboardButton("Contact me ↗️", url=f"https://t.me/ielts_pathway")]]
+    keyboard = [[InlineKeyboardButton("المحاولة مرة أخرى 🔁", callback_data=f"try_again")]]
+                # [InlineKeyboardButton("Contact me ↗️", url=f"https://t.me/ielts_pathway")]]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
     try:
         if update.effective_message:
             await update.effective_message.reply_text(issue_message, reply_markup=reply_markup)
-        elif update.callback_query:
-            await edit_message_with_fallback(update, context, issue_message)
+            
+        # elif update.callback_query:
+        #     await edit_message_with_fallback(update, context, issue_message)
         else:
             await context.bot.send_message(chat_id=update.effective_chat.id, text=issue_message, reply_markup=reply_markup)
     except Exception as e:
         print(f"Failed to send error message: {e}")
-
-# async def audio_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-#     await remove_keyboard(update,context)
-#     if context.user_data.get('mode') != 'pronunciation_practice':
-#         await update.message.reply_text("I'm not sure what to do with this audio. Are you in pronunciation practice mode?")
-#         return
-
-#     current_sentence = context.user_data.get('current_sentence')
-#     if not current_sentence:
-#         await update.message.reply_text("I'm sorry, I don't have a sentence for you to practice. Let's start over.")
-#         await pronunciation_practice_start(update, context)
-#         return
-
-#     file_id = update.message.voice.file_id
-#     try:
-#         transcript = await convert_audio_to_text(file_id, update, context)
-#         # transcript = transcript.lower().strip()
-#         # current_sentence = current_sentence.lower().strip()
-#         transcript_clean = re.sub(r'[^\w\s]', '', transcript.lower().strip())
-#         current_sentence_clean = re.sub(r'[^\w\s]', '', current_sentence.lower().strip())
-        
-#         keyboard = InlineKeyboardMarkup([
-#             [InlineKeyboardButton("Next", callback_data='pronunciation_next'),
-#              InlineKeyboardButton("Get Pronunciation", callback_data='pronunciation_get')],
-#             [InlineKeyboardButton("stop", callback_data='pronunciation_stop')]
-#         ])
-
-#         keyboard2 = InlineKeyboardMarkup([
-#             [InlineKeyboardButton("Next", callback_data='pronunciation_next'),
-#              InlineKeyboardButton("stop", callback_data='pronunciation_stop')]
-#         ])
-        
-#         if transcript_clean == current_sentence_clean:
-#             await update.message.reply_text("Great job! Your pronunciation was correct.", reply_markup=keyboard2)
-#         else:
-#             await update.message.reply_text(
-#                 f"Good attempt, but not quite right. Try again or choose an option below.\n\n"
-#                 f"You said: {transcript}\n\n"
-#                 f"The correct sentence is: {current_sentence}",
-#                 reply_markup=keyboard
-#             )
-#     except Exception as e:
-#         await error_handler(update, context, f"An error occurred while processing your audio: {str(e)}")
-
 
 async def audio_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await remove_keyboard(update,context)
@@ -477,37 +466,38 @@ async def audio_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if context.user_data.get('mode') == 'pronunciation_practice':
         current_sentence = context.user_data.get('current_sentence')
         if not current_sentence:
-            await update.message.reply_text("I'm sorry, I don't have a sentence for you to practice. Let's start over.")
+            await update.message.reply_text("آسف ليس هناك جمل للتدرب عليها حاليا، دعنا نبدأ من جديد")
             await pronunciation_practice_start(update, context)
             return
 
         file_id = update.message.voice.file_id
         try:
+            
             transcript = await convert_audio_to_text(file_id, update, context)
             if not transcript:
-                await update.message.reply_text("I'm sorry, I couldn't understand your voice message. Please try again.")
+                await update.message.reply_text("آسف لم أستطع فهم رسالتك الصوتية، حاول مرة أخرى بشكل أوضح")
                 return
             transcript_clean = re.sub(r'[^\w\s]', '', transcript.lower().strip())
             current_sentence_clean = re.sub(r'[^\w\s]', '', current_sentence.lower().strip())
             
             keyboard = InlineKeyboardMarkup([
-                [InlineKeyboardButton("Next", callback_data='pronunciation_next'),
-                 InlineKeyboardButton("Get Pronunciation", callback_data='pronunciation_get')],
-                [InlineKeyboardButton("stop", callback_data='pronunciation_stop')]
+                [InlineKeyboardButton("التالي ⬅️", callback_data='pronunciation_next'),
+                 InlineKeyboardButton("النطق الصحيح 🔊", callback_data='pronunciation_get')],
+                [InlineKeyboardButton("إلغاء ❌", callback_data='pronunciation_stop')]
             ])
 
             keyboard2 = InlineKeyboardMarkup([
-                [InlineKeyboardButton("Next", callback_data='pronunciation_next'),
-                 InlineKeyboardButton("stop", callback_data='pronunciation_stop')]
+                [InlineKeyboardButton("التالي ⬅️", callback_data='pronunciation_next'),
+                 InlineKeyboardButton("إلغاء ❌", callback_data='pronunciation_stop')]
             ])
             
             if transcript_clean == current_sentence_clean:
-                await update.message.reply_text("Great job! Your pronunciation was correct.", reply_markup=keyboard2)
+                await update.message.reply_text("أحسنت ✅، النطق صحيح", reply_markup=keyboard2)
             else:
                 await update.message.reply_text(
-                    f"Good attempt, but not quite right. Try again or choose an option below.\n\n"
-                    f"You said: {transcript}\n\n"
-                    f"The correct sentence is: {current_sentence}",
+                    f"محاولة جيدة، لكن ليس صحيح تماماً، يمكنك المحاولة مرة أخرى أو اختيار أحد الخيارات التالية\n\n"
+                    f"أنت قلت: {transcript}\n\n"
+                    f"الجملة الصحيحة هي: {current_sentence}",
                     reply_markup=keyboard
                 )
         except Exception as e:
@@ -516,9 +506,12 @@ async def audio_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif context.user_data.get('mode') == 'ai_tutor':
         file_id = update.message.voice.file_id
         try:
+            await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="RECORD_VOICE")
             transcript = await convert_audio_to_text(file_id, update, context)
+            # transcript = await wisperSTT(file_id,update,context)
             if not transcript:
-                await update.message.reply_text("I'm sorry, I couldn't understand your voice message. Please try again.")
+                text = "آسف لم أستطع فهم رسالتك الصوتية، يرجى المحاولة مرة أخرى، يرجى تسجيل صوتك فقط باللغة الإنجليزية إذا أردت استخدام اللغة العربية، يرجى إرسالها كرسالة"
+                await update.message.reply_text(text)
                 return
             context.user_data['ai_tutor_mode'] = 'voice'
             # Instead of processing here, call the ai_tutor function
@@ -526,8 +519,9 @@ async def audio_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         except Exception as e:
             await error_handler(update, context, f"An error occurred while processing your audio: {str(e)}")
 
-    else:
-        await update.message.reply_text("I'm not sure what to do with this audio. Are you in pronunciation practice or AI tutor mode?")
+    # else:
+    #     await update.message.reply_text("آسف لم أستطع فهم رسالتك الصوتية؟")
+        
 
 async def register_user(update: Update, context: ContextTypes.DEFAULT_TYPE, language):
     user_id = update.effective_user.id
@@ -554,7 +548,9 @@ async def handle_dictionary_lookup(update: Update, context: ContextTypes.DEFAULT
         result = await unify(prompt)
         await update.message.reply_text(result)
     except Exception as e:
-        await update.message.reply_text(f"An error occurred while looking up the word: {str(e)}")
+        print(e)
+        pass
+        # await update.message.reply_text(f"An error occurred while looking up the word: {str(e)}")
     
     context.user_data['awaiting_word'] = False
 
@@ -580,15 +576,15 @@ async def ask_language(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def stop_pronunciation_practice(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data.clear()  # Clear user data
-    await update.callback_query.edit_message_text("Pronunciation practice has been stopped. Returning to the main menu.")
+    # await update.callback_query.edit_message_text("Pronunciation practice has been stopped. Returning to the main menu.")
     await send_main_menu(update, context)  
 async def spelling_practice_start(update: Update, context: ContextTypes.DEFAULT_TYPE,text):
     keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton("Simple", callback_data='spelling_simple'),
-         InlineKeyboardButton("Medium", callback_data='spelling_medium')],
-        [InlineKeyboardButton("Hard", callback_data='spelling_hard'),
-         InlineKeyboardButton("Sentence", callback_data='spelling_sentence')],
-        [InlineKeyboardButton("Stop", callback_data='spelling_stop')]
+        [InlineKeyboardButton("سهلة", callback_data='spelling_simple'),
+         InlineKeyboardButton("متوسطة", callback_data='spelling_medium')],
+        [InlineKeyboardButton("صعبة", callback_data='spelling_hard'),
+         InlineKeyboardButton("التدرب على جمل", callback_data='spelling_sentence')],
+        [InlineKeyboardButton("إلغاء ❌", callback_data='spelling_stop')]
     ])
     keyboard2 = ReplyKeyboardMarkup([
         # [KeyboardButton("📚 Dictionary")],
@@ -599,7 +595,7 @@ async def spelling_practice_start(update: Update, context: ContextTypes.DEFAULT_
         await update.callback_query.edit_message_reply_markup(reply_markup=keyboard)
     else:
         await update.message.reply_text(text, reply_markup=keyboard2)
-        await update.message.reply_text("Choose the difficulty level:", reply_markup=keyboard)
+        await update.message.reply_text("اختر مستوى الصعوبة:", reply_markup=keyboard)
     context.user_data['mode'] = 'spelling_practice'
     # context.user_data['correct_count'] = 0
     # context.user_data['wrong_count'] = 0
@@ -624,8 +620,8 @@ async def spelling_practice_process(update: Update, context: ContextTypes.DEFAUL
         attempts += 1
 
     if attempts == max_attempts:
-        await update.effective_message.reply_text("You've practiced all available words for this difficulty level. Please choose another difficulty or stop the practice.")
-        await spelling_practice_start(update, context, "Choose a new difficulty level:")
+        await update.effective_message.reply_text("لقد تدربت على جميع الكلمات المتاحة لهذا المستوى، يرجى اختيار مستوى جديد أو إلغاء التدريب")
+        await spelling_practice_start(update, context, "اختر مستوى جديد:")
         return
 
     keyboard = ReplyKeyboardMarkup([
@@ -643,7 +639,8 @@ async def spelling_practice_process(update: Update, context: ContextTypes.DEFAUL
     user_data = await supabase_select("users", "preferred_accent", "user_id", user_id)
     preferred_accent = user_data.data[0]['preferred_accent'] if user_data.data else "American"
     if preferred_accent == "American":
-        preferred_accent = "Scarlett"
+        preferred_accent = "Dan"
+        await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="RECORD_VOICE")
         audio_file = await convert_text_to_audio(word, preferred_accent)
     elif preferred_accent == "British":
         preferred_accent = "aura-athena-en"
@@ -657,7 +654,7 @@ async def spelling_practice_process(update: Update, context: ContextTypes.DEFAUL
             # Delete the file after sending
             if os.path.exists(audio_file):
                 os.remove(audio_file)
-    await update.effective_message.reply_text("Please spell the word/sentence you just heard:", reply_markup=keyboard)
+    await update.effective_message.reply_text("يرجى كتابة الكلمة/الجملة التي قمت بالإستماع إليها:", reply_markup=keyboard)
 
 
 async def send_long_message(update, context, message, reply_markup=None, parse_mode='HTML'):
@@ -683,11 +680,11 @@ async def send_long_message(update, context, message, reply_markup=None, parse_m
 
 async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
-    print(text)
+    # print(text)
     
-    if text == "📝 Spelling Practice" or text == "✏️ Spelling Checker":
-        await spelling_practice_start(update, context,"Welcome to Spelling Practice!")
-    elif text == "📚 Dictionary":
+    if text == "✏️ التهجئة" or text == "✏️ Spelling Checker":
+        await spelling_practice_start(update, context,"أهلا بك في التدرب على الاسبلينغ")
+    elif text == "📚 القاموس":
         await dictionary_start(update, context)
     elif text == "/stop":
         
@@ -697,42 +694,52 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif context.user_data.get('mode') == 'dictionary' and context.user_data.get('awaiting_word'):
         context.user_data['awaiting_word'] = False
         await dictionary_process(update, context)
-    elif text == "🗣️ Pronunciation Practice":
+    elif text == "🗣️ تمارين النطق":
         context.user_data['mode'] = 'pronunciation_practice'
         await pronunciation_practice_start(update, context)
-    elif text == "🔍 Grammar":
+    elif text == "🔍 القواعد":
         main_menu_keyboard = ReplyKeyboardMarkup([
-        [KeyboardButton("📚 Grammar lessons"), KeyboardButton("🔍 Grammar Checker")],
+        [KeyboardButton("📚 دروس القواعد"), KeyboardButton("🔍 مصحح القواعد")],
         [KeyboardButton("/stop")]
     ], resize_keyboard=True)
-        await update.message.reply_text("Please select an option from the menu below to get started!",reply_markup=main_menu_keyboard)
+        await update.message.reply_text("أختر أحد هذه الخيارات للبدء",reply_markup=main_menu_keyboard)
     
     elif context.user_data.get('mode') == 'grammar_check':
         if 'grammar_check_queue' not in context.user_data:
             context.user_data['grammar_check_queue'] = deque()
 
-        if update.message.text and update.message.text not in ["📚 Dictionary", "🔍 Grammar Checker", "✏️ Spelling Checker", "🗣️ Pronunciation Practice"]:
+        if update.message.text and update.message.text not in ["📚 القاموس", "🔍 مصحح القواعد", "✏️ التهجئة", "🗣️ تمارين النطق"]:
             context.user_data['grammar_check_queue'].append(('text', update.message.text))
         elif update.message.photo:
             context.user_data['grammar_check_queue'].append(('photo', update.message.photo[-1].file_id))
         elif update.message.document:
-            await update.message.reply_text("Please send your text directly or as an image. I can't process document files.")
+            keyboard = ReplyKeyboardMarkup([
+                [KeyboardButton("/stop")]
+            ], resize_keyboard=True)
+            await update.message.reply_text("آسف يمكنك فقط إرسال صورة أو كتابة",reply_markup=keyboard)
             return
         else:
-            await update.message.reply_text("Please send a text message or an image for grammar checking.")
+            keyboard = ReplyKeyboardMarkup([
+                [KeyboardButton("/stop")]
+            ], resize_keyboard=True)
+            await update.message.reply_text("الرجاء إرسال الجملة التي تريد تصحيحها (يمكنك إرسال صورة لكتابتك)",reply_markup=keyboard)
             return
 
         if len(context.user_data['grammar_check_queue']) == 1:
             await process_grammar_check_queue(update, context)
         else:
-            await update.message.reply_text(f"Queued for grammar checking. {len(context.user_data['grammar_check_queue'])} items in queue.")
+            print("queued")
+            # await update.message.reply_text(f"Queued for grammar checking. {len(context.user_data['grammar_check_queue'])} items in queue.")
         return
     
-    elif text == "🔍 Grammar Checker":
-        await update.message.reply_text("Please send your text or images for grammar checking. You can send multiple messages or images, and I'll check them one by one.")
+    elif text == "🔍 مصحح القواعد":
+        keyboard = ReplyKeyboardMarkup([
+                [KeyboardButton("/stop")]
+            ], resize_keyboard=True)
+        await update.message.reply_text("الرجاء إرسال الجملة التي تريد تصحيحها (يمكنك إرسال صورة لكتابتك)",reply_markup=keyboard)
         context.user_data['mode'] = 'grammar_check'
         context.user_data['grammar_check_queue'] = deque()
-    elif text == "📚 Grammar lessons":
+    elif text == "📚 دروس القواعد":
             await grammar_lessons_start(update, context)
     elif context.user_data.get('grammar_state') == 'topic':
         await grammar_subtopic(update, context)
@@ -744,35 +751,53 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await handle_more_exercises(update, context)
     
     
-    elif text == "🔤 Vocabulary":
+    elif text == "🔤 المفردات":
         keyboard = ReplyKeyboardMarkup([
-            [KeyboardButton("🔄 Vocabulary Recap"), KeyboardButton("🗂️ Vocabulary Flashcards")],
+            [KeyboardButton("🔄 مراجعة المفردات"), KeyboardButton("🔤 تعلم مفردات جديدة")],
             [KeyboardButton("/stop")]
         ], resize_keyboard=True)
-        await update.message.reply_text("Please select an option from the menu below to get started!",reply_markup=keyboard)
+        await update.message.reply_text("أختر أحد هذه الخيارات للبدء:",reply_markup=keyboard)
     
-    elif text == "🔄 Vocabulary Recap":
+    elif text == "🔄 مراجعة المفردات":
         await remove_keyboard(update,context)
         context.user_data['word_recap_session'] = []
         await vocabulary_recap(update, context)
     
-    elif text == "🗂️ Vocabulary Flashcards":
+    elif text == "🔤 تعلم مفردات جديدة":
         await remove_keyboard(update,context)
         await vocabulary_flashcards(update, context)
-    elif text == "🗣️ AI English Tutor":
+    elif text == "🧑‍🏫 معلم اللغة الانجليزية (AI)":
         context.user_data['mode'] = 'ai_tutor'
         await ai_tutor(update, context,"")
     elif context.user_data.get('mode') == 'ai_tutor':
-        if text.lower() in ['exit', '/stop']:
-            context.user_data.clear()
-            await send_main_menu(update, context)
-        else:
+        try:
+            if text.lower() in ['exit', '/stop']:
+                context.user_data.clear()
+                await send_main_menu(update, context)
+            else:
+                await ai_tutor(update, context,"")
+        except Exception as e:
             await ai_tutor(update, context,"")
     
-    
-    
-    else:
-        await update.message.reply_text("I'm sorry, I didn't understand that command. Please use the menu options.")
+    elif text == "🔍 مصادر اللغة الانجليزية":
+        markup = ReplyKeyboardMarkup([
+        [KeyboardButton("Reading"), KeyboardButton("Listening")],
+        [KeyboardButton("Speaking"), KeyboardButton("Writing")],
+        [KeyboardButton("English learning Plan")],
+        [KeyboardButton("/stop")]])
+        await context.bot.send_message(chat_id=update.effective_chat.id, text="الرجاء اختيار أحد الخيارات من القائمة أدناه للبدء!",reply_markup=markup)
+    elif text == "Reading":
+        await reading_sources(update, context)
+    elif text == "Listening":
+        await listening_sources(update, context)
+    elif text == "Speaking":
+        await speaking_sources(update, context)
+    elif text == "Writing":
+        await writing_sources(update, context)
+    elif text == "English learning Plan":
+        await english_learning_plan(update, context)
+    # else:
+    #     await update.message.reply_text("I'm sorry, I didn't understand that command. Please use the menu options.")
 
 
 async def process_grammar_check_queue(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -800,18 +825,20 @@ async def check_spelling(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         context.user_data['attempts'] += 1
         if context.user_data['attempts'] < 4:
-            await update.message.reply_text(f"Sorry, that's not correct. You have {4 - context.user_data['attempts']} attempts left. Try again:")
+            text = f"آسف، هذا غير صحيح. لديك {4 - context.user_data['attempts']} محاولات أخرى. حاول مرة أخرى:"
+            await update.message.reply_text(text)
         else:
             context.user_data['wrong_count'] = context.user_data.get('wrong_count', 0) + 1
             context.user_data['session_words']['incorrect'].append(context.user_data['current_word'])
             if context.user_data['current_difficulty'] != 'sentence':
                 keyboard = InlineKeyboardMarkup([
-                    [InlineKeyboardButton(f"Learn about '{context.user_data['current_word']}'", callback_data=f'learn_{context.user_data["current_word"]}')],
-                    [InlineKeyboardButton("Continue", callback_data='spelling_continue')]
+                    [InlineKeyboardButton(f"أعرف أكثر عن '{context.user_data['current_word']}'", callback_data=f'learn_{context.user_data["current_word"]}')],
+                    [InlineKeyboardButton("التالي ⬅️", callback_data='spelling_continue')]
                 ])
                 await update.message.reply_text(
-                    f"Sorry, the correct spelling is: {context.user_data['current_word']}",
-                    reply_markup=keyboard
+                    f"آسف، التهجئة الصحيحة هي: <strong><ins> {context.user_data['current_word']}</ins></strong>",
+                    reply_markup=keyboard,
+                    parse_mode="HTML"
                 )
             else:
                 await spelling_practice_start(update, context, f"Sorry, the correct spelling is: {context.user_data['current_word']}")
@@ -846,11 +873,11 @@ async def ask_preferred_accent(update: Update, context: ContextTypes.DEFAULT_TYP
     try:
         user_id = update.effective_user.id
         keyboard = [
-            [InlineKeyboardButton("American 🇺🇸", callback_data=f'accent_American')],
-            [InlineKeyboardButton("British 🇬🇧", callback_data=f'accent_British')]
+            [InlineKeyboardButton("لهجة أمريكية 🇺🇸", callback_data=f'accent_American')],
+            [InlineKeyboardButton("لهجة بريطانية 🇬🇧", callback_data=f'accent_British')]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
-        await update.effective_message.reply_text("Which accent do you prefer?", reply_markup=reply_markup)
+        await update.effective_message.reply_text("ماهي اللهجة التي تفضلها؟", reply_markup=reply_markup)
     except Exception as e:
         text = ("🚨 ask preferred accent function", e)
         error_traceback = traceback.format_exc()
@@ -859,22 +886,27 @@ async def ask_preferred_accent(update: Update, context: ContextTypes.DEFAULT_TYP
         
 async def send_main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     main_menu_keyboard = ReplyKeyboardMarkup([
-        [KeyboardButton("📚 Dictionary"), KeyboardButton("🔍 Grammar")],
-        [KeyboardButton("✏️ Spelling Checker"), KeyboardButton("🗣️ Pronunciation Practice")],
-        [KeyboardButton("🔤 Vocabulary"),KeyboardButton("🗣️ AI English Tutor")]
+        [KeyboardButton("📚 القاموس"), KeyboardButton("🔍 القواعد")],
+        [KeyboardButton("✏️ التهجئة"), KeyboardButton("🗣️ تمارين النطق")],
+        [KeyboardButton("🔤 المفردات"),KeyboardButton("🧑‍🏫 معلم اللغة الانجليزية (AI)")],
+        # [KeyboardButton("🔍 مصادر اللغة الانجليزية")]
     ], resize_keyboard=True)
     
     welcome_message = (
-        "Welcome to the English Learning Bot! 🎉\n\n"
-        "What would you like to do today?\n\n"
-        "📚 Dictionary: Look up words and their meanings\n"
-        "🔍 Grammar Checker: Check your text or images for grammatical errors\n"
-        "✏️ Spelling Checker: Verify the spelling of words\n"
-        "🗣️ Pronunciation Practice: Practice your pronunciation\n\n"
-        "Please select an option from the menu below to get started!"
-    )
-    await update.effective_message.reply_text(welcome_message, reply_markup=main_menu_keyboard)
+        "مرحبًا بك في بوت تعلم اللغة الإنجليزية! 🎉\n\n"
+        "ماذا تود أن تفعل اليوم؟\n\n"
+        "📚 <strong><u>القاموس:</u></strong> ابحث عن الكلمات ومعانيها\n"
+        "🔍 <strong><u>القواعد:</u></strong> تصحيح الكتابة ودروس للقواعد مع التمارين\n"
+        "✏️ <strong><u>التهجئة:</u></strong> التدرب على تهجئة الكلمات\n"
+        "🗣️ <strong><u>تمارين النطق:</u></strong> التدرب على النطق\n"
+        "🔤 <strong><u>المفردات:</u></strong> راجع الكلمات أو تعلم مفردات جديدة\n"
+        "🧑‍🏫 <strong><u>معلم الذكاء الاصطناعي:</u></strong> احصل على دروس مخصصة بناءً على مستواك وتفضيلاتك\n"
+        "يرجى تحديد خيار من القائمة أدناه للبدء!"
+        # "🔍 موارد تعلم اللغة الإنجليزية: استكشف موارد القراءة والاستماع والتحدث والكتابة\n\n"
 
+    )
+    await update.effective_message.reply_text(welcome_message, reply_markup=main_menu_keyboard,parse_mode="HTML")
+    await supabase_update("users", {"last_use": datetime.now().isoformat()}, "user_id", update.effective_user.id)
 async def edit_message_with_fallback(update: Update, context: ContextTypes.DEFAULT_TYPE, new_text: str):
     query = update.callback_query
     try:
@@ -924,13 +956,15 @@ async def handle_learn_word(update: Update, context: ContextTypes.DEFAULT_TYPE):
         Formatting Guidelines:
 
         Make sure the explanation is easy to follow and simple for language learners to grasp."""
-
+    prompt += f"\n\nto make it looks better and more organized you can use HTML style format <strong>bold</strong> for bold text this for the definition  , <ins>underline</ins> for underline text this for the meaning in Arabic and <blockquote> </blockquote> for examples also make it bold the examples\n\n please make sure to use them properly "
     try:
+        await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="TYPING")
         result = await unify(prompt)
-        keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Continue", callback_data='spelling_continue')]])
-        await query.edit_message_text(text=result, reply_markup=keyboard)
+        keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("أستمر ⬅️", callback_data='spelling_continue')]])
+        await query.edit_message_text(text=result, reply_markup=keyboard,parse_mode="HTML")
     except Exception as e:
-        await query.edit_message_text(f"An error occurred while looking up the word: {str(e)}")
+        print(e)
+        await error_handler(update, context, f"An error occurred while looking up the word: {str(e)}")
 async def pronunciation_practice_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if "pronunciation_sentence" in context.user_data:
         context.user_data["pronunciation_sentence"] = []
@@ -947,26 +981,26 @@ async def pronunciation_practice_start(update: Update, context: ContextTypes.DEF
         attempts += 1
 
     if attempts == max_attempts:
-        await update.effective_message.reply_text("You've practiced all available sentences for this difficulty level. Please choose another difficulty or stop the practice.")
-        await pronunciation_practice_start(update, context, "Choose a new difficulty level:")
+        await update.effective_message.reply_text("لقد تدربت على كل الجمل المتاحة لهذا المستوى. يُرجى اختيار مستوى آخر أو إيقاف التدريب.")
+        await pronunciation_practice_start(update, context, "اختر مستوى جديد أو إيقاف التدريب:")
         return
     context.user_data['current_sentence'] = sentence
-    keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Try another sentence", callback_data='pronunciation_next')]])
+    keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("🔁 جرب جملة أخرى", callback_data='pronunciation_next')]])
     keyboard2 = ReplyKeyboardMarkup([
         [KeyboardButton("/stop")]
     ], resize_keyboard=True)
-    text = f"Please record yourself saying this sentence:\n\n{sentence}"
-    text2 = "Send your voice message when you're ready."
+    text = f"من فضلك سجل نفسك وأنت تقول هذه الجملة:\n<blockquote> {sentence} </blockquote>"
+    text2 = "أرسل رسالتك الصوتية عندما تكون مستعدًا."
     if update.callback_query:
         try:
-            await update.callback_query.edit_message_text(text, reply_markup=keyboard2)
+            await update.callback_query.edit_message_text(text, reply_markup=keyboard2,parse_mode="HTML")
             await update.callback_query.edit_message_text(text2, reply_markup=keyboard)
         except Exception as e:
-            await update.effective_chat.send_message(text, reply_markup=keyboard2)
+            await update.effective_chat.send_message(text, reply_markup=keyboard2,parse_mode="HTML")
             await update.effective_chat.send_message(text2, reply_markup=keyboard)
     else:
-        await update.message.reply_text(text, reply_markup=keyboard2)
-        await update.message.reply_text(text2,reply_markup=keyboard)
+        await update.message.reply_text(text, reply_markup=keyboard2,parse_mode="HTML")
+        await update.message.reply_text(text2,reply_markup=keyboard,parse_mode="HTML")
      
 async def pronunciation_next(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await pronunciation_practice_start(update, context)
@@ -975,7 +1009,7 @@ async def pronunciation_next(update: Update, context: ContextTypes.DEFAULT_TYPE)
 async def grammar_check_text(update: Update, context: ContextTypes.DEFAULT_TYPE,text=None):
     user_text = text or update.message.text
     
-    prompt = """
+    prompt = f"""
     You are an expert English teacher. Analyze the following text for grammatical errors, 
     spelling mistakes, and suggestions for improvement. Provide a detailed report including:
     1. Overall assessment
@@ -983,28 +1017,31 @@ async def grammar_check_text(update: Update, context: ContextTypes.DEFAULT_TYPE,
     3. Spelling mistakes (if any)
     4. Suggestions for improvement
     5. Corrected version of the text
-
-    Text to analyze:
+    you should Explain in mixed Arabic and English and make it clear and easy to understand and make it orgnaized
+    Text to analyze: {user_text}
     """
+    prompt += f"\n\nto make it looks better and more organized you can use HTML style format <strong>bold</strong> for bold text  , <ins>underline</ins> for underline text  and <blockquote> </blockquote> for examples also make it bold the examples\n\n please make sure to use them properly "
+
     keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton("Check Another", callback_data='grammar_check_another'),
-         InlineKeyboardButton("Return to Main Menu", callback_data='return_main_menu')]
+        [InlineKeyboardButton("تصحيح جملة أخرى", callback_data='grammar_check_another'),
+         InlineKeyboardButton("العودة إلى القائمة", callback_data='return_main_menu')]
     ])
     keyboard2 = ReplyKeyboardMarkup([
         [KeyboardButton("/stop")]
     ], resize_keyboard=True)
     
     try:
-        llm_response = await unify(prompt + user_text)
+        await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="TYPING")
+        llm_response = await unify(prompt)
         
-        await update.message.reply_text("Here's the analysis of your text:",reply_markup=keyboard2)
+        await update.message.reply_text("تصحيح النص:",reply_markup=keyboard2,parse_mode="HTML")
         await send_long_message(update, context, llm_response, keyboard)
     except Exception as e:
         await error_handler(update, context, f"An error occurred while analyzing the text: {str(e)}")
 
 async def grammar_check_image(update: Update, context: ContextTypes.DEFAULT_TYPE,file_id=None):
     if not update.message.photo:
-        await update.message.reply_text("Please send an image containing text to analyze.")
+        await update.message.reply_text("رجاءاً أرسل صورة لكتابتك لتصحيحها .")
         return
 
     # file = await context.bot.get_file(update.message.photo[-1].file_id)
@@ -1014,8 +1051,9 @@ async def grammar_check_image(update: Update, context: ContextTypes.DEFAULT_TYPE
         file = await context.bot.get_file(update.message.photo[-1].file_id)
     image_bytes = await file.download_as_bytearray()
     image = Image.open(io.BytesIO(image_bytes))
-
-    image_prompt = """
+    caption = update.message.caption if update.message.caption else "No caption provided"
+    # print(caption)
+    image_prompt = f"""
     Analyze the text in this image for grammatical errors, spelling mistakes, and suggestions 
     for improvement. Provide a detailed report including:
     1. Extracted text from the image
@@ -1024,32 +1062,47 @@ async def grammar_check_image(update: Update, context: ContextTypes.DEFAULT_TYPE
     4. Spelling mistakes (if any)
     5. Suggestions for improvement
     6. Corrected version of the text
-    """
+    you should Explain in mixed Arabic and English and make it clear and easy to understand and make it orgnaized
+
+    Additionally, the user provided the following caption for this image:
+    "{caption}"
+    Please consider this caption in your analysis if it's relevant to the text in the image."""
+    
+    
     keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton("Check Another", callback_data='grammar_check_another'),
-         InlineKeyboardButton("Return to Main Menu", callback_data='return_main_menu')]
+        [InlineKeyboardButton("تصحيح جملة أخرى", callback_data='grammar_check_another'),
+         InlineKeyboardButton("العودة إلى القائمة", callback_data='return_main_menu')]
     ])
     keyboard2 = ReplyKeyboardMarkup([
         [KeyboardButton("/stop")]
     ], resize_keyboard=True)
-    
+    await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="TYPING")
     try:
         extracted_text = await gemini_ocr(image_prompt, image)
-        await update.message.reply_text("Here's the analysis of the text in your image:",reply_markup=keyboard2)
-        await send_long_message(update, context, extracted_text, keyboard)
+        
+        prompt = f"""
+        you will be given report of grammar check rewrite the report in mixed Arabic and English and make it clear and easy to understand and make it orgnaized
+        the report: \n\n{extracted_text}
+        """
+        prompt += f"\n\nto make it looks better and more organized you can use HTML style format <strong>bold</strong> for bold text  , <ins>underline</ins> for underline text  and <blockquote> </blockquote> for examples also make it bold the examples\n\n please make sure to use them properly and only use these  tags and make sure you do it accurtally and perfectly this will be for telegram bot"
+        await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="TYPING")
+        llm_response = await unify(prompt)
+        await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="TYPING")
+        await update.message.reply_text("هذا هو تصحيح كتابتك:",reply_markup=keyboard2,parse_mode="HTML")
+        await send_long_message(update, context, llm_response, keyboard)
     except Exception as e:
         await error_handler(update, context, f"An error occurred while analyzing the image: {str(e)}")
 
 
 GRAMMAR_TOPICS = {
-    "Tenses": {
-        "Present Tense": ["Present Simple", "Present Continuous", "Present Perfect", "Present Perfect Continuous"],
-        "Past Tense": ["Past Simple", "Past Continuous", "Past Perfect", "Past Perfect Continuous"],
-        "Future Tense": ["Future Simple", "Future Continuous", "Future Perfect", "Future Perfect Continuous"]
+    "الأزمنة": {
+        "زمن المضارع": ["المضارع البسيط", "المضارع المستمر", "المضارع التام", "المضارع التام المستمر"],
+        "زمن الماضي": ["الماضي البسيط", "الماضي المستمر", "الماضي التام", "الماضي التام المستمر"],
+        "زمن المستقبل": ["المستقبل البسيط", "المستقبل المستمر", "المستقبل التام", "المستقبل التام المستمر"]
     },
-    "Parts of Speech": ["Nouns", "Verbs", "Adjectives", "Adverbs", "Pronouns", "Prepositions", "Conjunctions", "Articles","Modal Verbs","If-Clauses"],
-    "Sentence Structure": ["Simple Sentences", "Compound Sentences", "Complex Sentences", "Compound-Complex Sentences"],
-    "Punctuation": ["Commas", "Periods", "Question Marks", "Exclamation Points", "Semicolons", "Colons", "Quotation Marks", "Dash", ],
+    "أجزاء الكلام": ["الأسماء", "الأفعال", "الصفات", "الظرف-الحال", "الضمائر", "حروف الجر", "حروف العطف", "أدوات التعريف","الأفعال الناقصة","الجمل الشرطية"],
+    "تركيب الجملة": ["الجمل البسيطة", "الجمل المركبة", "الجمل المعقدة", "الجمل المركبة المعقدة"],
+    "علامات الترقيم": ["(,) الفاصلة", "(.) نقطة نهاية الجملة", "(؟) علامة الإستفهام", "(!) علامة التعجب", "(;) فاصلة منقوطة", "(:) نقطتان", '("") علامة الاقتباس', "(-) الشرطة", ],
     # "Other Topics": []
 }
 
@@ -1064,7 +1117,7 @@ async def grammar_lessons_start(update: Update, context: ContextTypes.DEFAULT_TY
     
     keyboard.append([KeyboardButton("/stop")])
     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-    await update.message.reply_text("Choose a grammar topic:", reply_markup=reply_markup)
+    await update.message.reply_text("أختر موضوع القواعد:", reply_markup=reply_markup)
     context.user_data['grammar_state'] = 'topic'
 async def grammar_subtopic(update: Update, context: ContextTypes.DEFAULT_TYPE):
     topic = update.message.text
@@ -1084,11 +1137,11 @@ async def grammar_subtopic(update: Update, context: ContextTypes.DEFAULT_TYPE):
             keyboard.append(row)
         keyboard.append([KeyboardButton("/stop")])
         reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-        await update.message.reply_text(f"Choose a subtopic for {topic}:", reply_markup=reply_markup)
+        await update.message.reply_text(f"أختر الدرس:", reply_markup=reply_markup)
         context.user_data['grammar_state'] = 'subtopic'
         context.user_data['grammar_topic'] = topic
     else:
-        await update.message.reply_text("Invalid topic. Please choose from the options provided.")
+        await update.message.reply_text("رجاءاً أختر الدرس من القائمة.")
 async def grammar_lesson(update: Update, context: ContextTypes.DEFAULT_TYPE, topic=None, subtopic=None):
     if not topic:
         topic = context.user_data.get('grammar_topic')
@@ -1110,27 +1163,28 @@ async def grammar_lesson(update: Update, context: ContextTypes.DEFAULT_TYPE, top
                         keyboard.append(row)
                     keyboard.append([KeyboardButton("/stop")])
                     reply_markup = ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
-                    await update.message.reply_text(f"Choose a specific topic for {subtopic}:", reply_markup=reply_markup)
+                    await update.message.reply_text(f"أختر الدرس:", reply_markup=reply_markup)
                     context.user_data['grammar_state'] = 'sub_subtopic'
                     context.user_data['grammar_subtopic'] = subtopic
                 else:
                     # This is the final subtopic
                     keyboard = ReplyKeyboardMarkup([[KeyboardButton("/stop")]], resize_keyboard=True)
                     await send_lesson_content(update, context, topic, subtopic)
-                    await update.message.reply_text("Here are some exercises for you:", reply_markup=keyboard)
+                    await update.message.reply_text("هذه بعض التمارين المخصصة للتدرب على الدرس:", reply_markup=keyboard)
+                    await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="TYPING")
                     await send_exercise(update, context, topic, subtopic)
             else:
-                await update.message.reply_text("Invalid subtopic. Please choose from the options provided.")
+                await update.message.reply_text("رجاءاً، أختر الدرس من القائمة.")
         elif isinstance(GRAMMAR_TOPICS[topic], list):
             if subtopic in GRAMMAR_TOPICS[topic]:
                 keyboard = ReplyKeyboardMarkup([[KeyboardButton("/stop")]], resize_keyboard=True)
                 await send_lesson_content(update, context, topic, subtopic)
-                await update.message.reply_text("Here are some exercises for you:", reply_markup=keyboard)
+                await update.message.reply_text("هذه بعض التمارين المخصصة للتدرب على الدرس:", reply_markup=keyboard)
                 await send_exercise(update, context, topic, subtopic)
             else:
-                await update.message.reply_text("Invalid subtopic. Please choose from the options provided.")
+                await update.message.reply_text("رجاءاً، أختر الدرس من القائمة.")
     else:
-        await update.message.reply_text("Invalid topic. Please choose from the options provided.")
+        await update.message.reply_text("رجاءاً، أختر الدرس من القائمة.")
 
 async def grammar_sub_subtopic(update: Update, context: ContextTypes.DEFAULT_TYPE):
     topic = context.user_data.get('grammar_topic')
@@ -1140,10 +1194,10 @@ async def grammar_sub_subtopic(update: Update, context: ContextTypes.DEFAULT_TYP
     if sub_subtopic in GRAMMAR_TOPICS[topic][subtopic]:
         keyboard = ReplyKeyboardMarkup([[KeyboardButton("/stop")]], resize_keyboard=True)
         await send_lesson_content(update, context, topic, subtopic, sub_subtopic)
-        await update.message.reply_text("Here are some exercises for you:", reply_markup=keyboard)
+        await update.message.reply_text("هذه بعض التمارين المخصصة للتدرب على الدرس:", reply_markup=keyboard)
         await send_exercise(update, context, topic, subtopic, sub_subtopic)
     else:
-        await update.message.reply_text("Invalid topic. Please choose from the options provided.")
+        await update.message.reply_text("رجاءاً، أختر الدرس من القائمة.")
 def get_lesson_content(topic, subtopic, sub_subtopic=None):
     try:
         if sub_subtopic:
@@ -1155,133 +1209,18 @@ def get_lesson_content(topic, subtopic, sub_subtopic=None):
     except KeyError:
         return "Lesson content not found.", None, None
 
-# async def send_exercise(update: Update, context: ContextTypes.DEFAULT_TYPE, topic, subtopic, sub_subtopic=None):
-#     exercises = get_exercises(context, topic, subtopic, sub_subtopic)
-#     if not exercises:
-#         message = update.message if isinstance(update, Update) else update.message
-#         await message.reply_text("You've completed all available exercises for this topic. Great job! Let's return to the topics menu.")
-#         await grammar_lessons_start(update, context)
-#         return
-
-#     context.user_data['current_exercises'] = exercises
-#     context.user_data['exercise_index'] = 0
-#     await send_next_exercise_batch(update, context)
 async def send_exercise(update: Update, context: ContextTypes.DEFAULT_TYPE, topic, subtopic, sub_subtopic=None):
     exercises = get_exercises(context, topic, subtopic, sub_subtopic)
     if not exercises:
         message = update.message if isinstance(update, Update) else update.message
-        await message.reply_text("No exercises available for this topic. Let's return to the topics menu.")
+        await message.reply_text("لا توجد تمارين متاحة لهذا الدرس. دعنا نعود إلى قائمة الدروس.")
         await grammar_lessons_start(update, context)
         return
 
     context.user_data['current_exercises'] = exercises
     context.user_data['exercise_index'] = 0
     await send_next_exercise_batch(update, context)
-# async def send_next_exercise_batch(update: Update, context: ContextTypes.DEFAULT_TYPE):
-#     exercises = context.user_data['current_exercises']
-#     index = context.user_data['exercise_index']
-    
-#     if isinstance(update, CallbackQuery):
-#         message = update.message
-#     else:
-#         message = update.effective_message
 
-#     batch_size = min(10, len(exercises) - index)
-#     for i in range(batch_size):
-#         exercise = exercises[index + i]
-#         await message.reply_poll(
-#             question=exercise['question'],
-#             options=exercise['options'],
-#             type=Poll.QUIZ,
-#             correct_option_id=exercise['correct_option_id'],
-#             is_anonymous=True,
-#             explanation=exercise['explanation']
-#         )
-# #     await message.reply_poll(
-# #        question="اختر الإجابة الصحيحة:\nShe ____ (go) to school every day.",
-# #        options=["54", "56", "58", "62"],
-# #        type="quiz",
-# #        correct_option_id=1,
-# #        explanation="Remember: 7 x 8 = 56. A helpful trick is to know that 7 x 8 is the same as 8 x 7, which is 8 more than 7 x 7 (49)."
-# #    )
-#     context.user_data['exercise_index'] += batch_size
-
-#     if context.user_data['exercise_index'] >= len(exercises):
-#         keyboard = InlineKeyboardMarkup([
-#             [InlineKeyboardButton("Return to Topics", callback_data='return_topics')]
-#         ])
-#         await message.reply_text(
-#             "You've completed all exercises for this topic! Would you like to return to the topics menu?",
-#             reply_markup=keyboard
-#         )
-#     else:
-#         keyboard = InlineKeyboardMarkup([
-#             [InlineKeyboardButton("Continue", callback_data='continue_exercises')],
-#             [InlineKeyboardButton("Return to Topics", callback_data='return_topics')]
-#         ])
-#         await message.reply_text(
-#             "Would you like to continue with more exercises or return to the topics menu?",
-#             reply_markup=keyboard
-#         )
-
-# async def send_next_exercise_batch(update: Update, context: ContextTypes.DEFAULT_TYPE):
-#     exercises = context.user_data['current_exercises']
-#     index = context.user_data['exercise_index']
-    
-#     if isinstance(update, CallbackQuery):
-#         message = update.message
-#     else:
-#         message = update.effective_message
-
-#     batch_size = min(5, len(exercises) - index)  # Reduced batch size to 5
-#     for i in range(batch_size):
-#         exercise = exercises[index + i]
-#         try:
-#             await message.reply_poll(
-#                 question=exercise['question'],
-#                 options=exercise['options'],
-#                 type=Poll.QUIZ,
-#                 correct_option_id=exercise['correct_option_id'],
-#                 is_anonymous=True,
-#                 explanation=exercise.get('explanation', '')  # Make explanation optional
-#             )
-#         except BadRequest as e:
-#             if "Message is too long" in str(e):
-#                 # If the message is too long, try sending without the explanation
-#                 try:
-#                     await message.reply_poll(
-#                         question=exercise['question'],
-#                         options=exercise['options'],
-#                         type=Poll.QUIZ,
-#                         correct_option_id=exercise['correct_option_id'],
-#                         is_anonymous=True
-#                     )
-#                 except BadRequest:
-#                     # If it's still too long, skip this exercise
-#                     continue
-#             else:
-#                 # If it's a different error, re-raise it
-#                 raise
-
-#     context.user_data['exercise_index'] += batch_size
-
-#     if context.user_data['exercise_index'] >= len(exercises):
-#         keyboard = InlineKeyboardMarkup([
-#             [InlineKeyboardButton("Return to Topics", callback_data='return_topics')]
-#         ])
-#         await message.reply_text(
-#             "You've completed all exercises for this topic! Would you like to return to the topics menu?",
-#             reply_markup=keyboard
-#         )
-#     else:
-#         keyboard = InlineKeyboardMarkup([
-#             [InlineKeyboardButton("Continue", callback_data='continue_exercises')],
-#             [InlineKeyboardButton("Return to Topics", callback_data='return_topics')]
-#         ])
-#         await message.reply_text(
-#             "Would you like to continue with more exercises or return to the topics menu?",
-#             reply_markup=keyboard
-#         )
 def shuffle_options(exercise):
     options = exercise['options']
     correct_answer = options[exercise['correct_option_id']]
@@ -1290,62 +1229,6 @@ def shuffle_options(exercise):
     exercise['options'] = options
     exercise['correct_option_id'] = new_correct_id
     return exercise
-
-# async def send_next_exercise_batch(update: Update, context: ContextTypes.DEFAULT_TYPE):
-#     exercises = context.user_data['current_exercises']
-#     index = context.user_data['exercise_index']
-    
-#     if isinstance(update, CallbackQuery):
-#         message = update.message
-#     else:
-#         message = update.effective_message
-
-#     batch_size = min(5, len(exercises) - index)
-#     for i in range(batch_size):
-#         exercise = exercises[index + i]
-#         try:
-#             await message.reply_poll(
-#                 question=exercise['question'],
-#                 options=exercise['options'],
-#                 type=Poll.QUIZ,
-#                 correct_option_id=exercise['correct_option_id'],
-#                 is_anonymous=True,
-#                 explanation=exercise.get('explanation', '')
-#             )
-#         except BadRequest as e:
-#             if "Message is too long" in str(e):
-#                 try:
-#                     await message.reply_poll(
-#                         question=exercise['question'],
-#                         options=exercise['options'],
-#                         type=Poll.QUIZ,
-#                         correct_option_id=exercise['correct_option_id'],
-#                         is_anonymous=True
-#                     )
-#                 except BadRequest:
-#                     continue
-#             else:
-#                 raise
-
-#     context.user_data['exercise_index'] += batch_size
-
-#     if context.user_data['exercise_index'] >= len(exercises):
-#         keyboard = InlineKeyboardMarkup([
-#             [InlineKeyboardButton("Return to Topics", callback_data='return_topics')]
-#         ])
-#         await message.reply_text(
-#             "You've completed all exercises for this topic! Would you like to return to the topics menu?",
-#             reply_markup=keyboard
-#         )
-#     else:
-#         keyboard = InlineKeyboardMarkup([
-#             [InlineKeyboardButton("Continue", callback_data='continue_exercises')],
-#             [InlineKeyboardButton("Return to Topics", callback_data='return_topics')]
-#         ])
-#         await message.reply_text(
-#             f"You've completed {context.user_data['exercise_index']} exercises. Would you like to continue with more exercises or return to the topics menu?",
-#             reply_markup=keyboard
-#         )
 
 async def send_next_exercise_batch(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if 'current_exercises' not in context.user_data:
@@ -1393,19 +1276,19 @@ async def send_next_exercise_batch(update: Update, context: ContextTypes.DEFAULT
 
     if context.user_data['exercise_index'] >= len(exercises):
         keyboard = InlineKeyboardMarkup([
-            [InlineKeyboardButton("Return to Topics", callback_data='return_topics')]
+            [InlineKeyboardButton("العودة إلى قائمة الدروس", callback_data='return_topics')]
         ])
         await message.reply_text(
-            "You've completed all exercises for this topic! Would you like to return to the topics menu?",
+            "تهانيناً! لقد أكملت كل التمارين لهذا الدرس.",
             reply_markup=keyboard
         )
     else:
         keyboard = InlineKeyboardMarkup([
-            [InlineKeyboardButton("Continue", callback_data='continue_exercises')],
-            [InlineKeyboardButton("Return to Topics", callback_data='return_topics')]
+            [InlineKeyboardButton("المزيد من التمارين ⬅️", callback_data='continue_exercises')],
+            [InlineKeyboardButton("العودة إلى قائمة الدروس", callback_data='return_topics')]
         ])
         await message.reply_text(
-            f"You've completed {context.user_data['exercise_index']} out of {len(exercises)} exercises. Would you like to continue with more exercises or return to the topics menu?",
+            f"لقد أكملت {context.user_data['exercise_index']} تمارين. هل تريد المزيد من التمارين أو العودة الى قائمة الدروس",
             reply_markup=keyboard
         )
 
@@ -1414,10 +1297,15 @@ async def send_lesson_content(update: Update, context: ContextTypes.DEFAULT_TYPE
     
     # Send lesson content
     # await update.message.reply_text(content)
-    await send_long_message(update, context, content,reply_markup=None)
+    await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="TYPING")
+    prompt= f"You will be given Grammar lesson on this topic {topic}, {subtopic}, {sub_subtopic} \n\nthis is the content of the lesson {content} \n\n i want you to orgnize the lesson and make is look better by applying HTML style format to make it looks better <strong>bold</strong> for bold text, <ins>underline</ins> for underline text and <blockquote> </blockquote> this for examples. you can use this when it is aprpriate to use it and when it is not important don't you use it you should make it perfectly Note: do not make any changes on the content just apply the new format style and only use these  tags <strong> <ins> <blockquote> and make sure you do it accurtally and perfectly this will be for telegram bot"
+    # prompt += f"\n\nyou can use HTML style format to make it looks better <strong>bold</strong> for bold text, <ins>underline</ins> for underline text and <blockquote> </blockquote> this for examples. you can use this when it is aprpriate to use it and when it is not important don't you use it you should make it perfectly"
+    lesson = await unify(prompt)
+    await send_long_message(update, context, lesson,reply_markup=None)
     # Send YouTube link
     if youtube_link:
-        await update.message.reply_text(f"Watch the video lesson here: {youtube_link}")
+        await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="TYPING")
+        await update.message.reply_text(f"{youtube_link}")
     
     # Send file
     if file_path:
@@ -1430,47 +1318,9 @@ async def send_lesson_content(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 
 
-# def get_exercises(context: ContextTypes.DEFAULT_TYPE, topic, subtopic, sub_subtopic=None):
-#     try:
-#         if topic == "Tenses":
-#             if sub_subtopic:
-#                 all_exercises = EXERCISES[topic][subtopic][sub_subtopic]
-#             else:
-#                 # If no sub_subtopic is provided for Tenses, we can't get exercises
-#                 return []
-#         else:
-#             all_exercises = EXERCISES[topic][subtopic]
-        
-#         # Convert the exercises to a list if it's not already
-#         exercises_list = list(all_exercises.values()) if isinstance(all_exercises, dict) else all_exercises
-        
-#         # Get the set of used exercise indices
-#         used_indices = set(context.user_data.get('used_exercise_indices', []))
-        
-#         # Filter out used exercises and exercises with long content
-#         available_exercises = [
-#             ex for i, ex in enumerate(exercises_list) 
-#             if i not in used_indices and 
-#             len(ex['question']) <= 300 and  # Adjust these limits as needed
-#             all(len(option) <= 100 for option in ex['options'])
-#         ]
-        
-#         # If no exercises are available, return an empty list
-#         if not available_exercises:
-#             return []
-        
-#         # Update the used exercise indices
-#         new_used_indices = [exercises_list.index(ex) for ex in available_exercises]
-#         context.user_data['used_exercise_indices'] = list(used_indices.union(new_used_indices))
-        
-#         return available_exercises  # Limit to 20 exercises
-#     except KeyError:
-#         print(f"KeyError in get_exercises: topic={topic}, subtopic={subtopic}, sub_subtopic={sub_subtopic}")
-#         return []
-
 def get_exercises(context: ContextTypes.DEFAULT_TYPE, topic, subtopic, sub_subtopic=None):
     try:
-        if topic == "Tenses":
+        if topic == "الأزمنة":
             if sub_subtopic:
                 all_exercises = EXERCISES[topic][subtopic][sub_subtopic]
             else:
@@ -1512,7 +1362,7 @@ async def send_next_exercise(update: Update, context: ContextTypes.DEFAULT_TYPE)
     else:
         keyboard = ReplyKeyboardMarkup([['More Exercises', 'Return to Topics']], one_time_keyboard=True)
         await update.effective_message.reply_text(
-            "You've completed all exercises! Would you like more exercises or return to the topics menu?",
+            "تهانيناً! لقد أكملت كل التمارين لهذا الدرس.",
             reply_markup=keyboard
         )
         context.user_data['grammar_state'] = 'more_exercises'
@@ -1547,7 +1397,7 @@ async def handle_exercise_response(update: Update, context: ContextTypes.DEFAULT
     
     exercise = context.user_data.get('current_exercise')
     if not exercise:
-        await query.edit_message_text("Sorry, there was an error with the exercise. Please try again.")
+        await query.edit_message_text("اسف هناك مشكلة لم استطع ارسال التمارين لهذا الدرس حاول مرة اخرى")
         return
 
     choice = int(query.data.split('_')[1])
@@ -1560,11 +1410,11 @@ async def handle_exercise_response(update: Update, context: ContextTypes.DEFAULT
     
     # Offer to continue or return to main menu
     keyboard = [
-        [InlineKeyboardButton("Continue Learning", callback_data="grammar_continue")],
-        [InlineKeyboardButton("Return to Main Menu", callback_data="return_main_menu")]
+        [InlineKeyboardButton("الإستمرار", callback_data="grammar_continue")],
+        [InlineKeyboardButton("العودة الى القائمة الرئيسية", callback_data="return_main_menu")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="What would you like to do next?", reply_markup=reply_markup)
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="ماذا تريد أن تفعل؟", reply_markup=reply_markup)
 
 async def handle_more_exercises(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -1597,7 +1447,7 @@ async def vocabulary_flashcards(update: Update, context: ContextTypes.DEFAULT_TY
         elif vocab_level == "medium":
             vocab_level = "hard"
         else:
-            await update.message.reply_text("Congratulations! You've learned all the words in our database.")
+            await update.message.reply_text("ألف مبروك! لقد أنتهيت من تعلم كل الكلمات المتاحة")
             return
         
         # Update user's vocabulary level in the database
@@ -1612,16 +1462,16 @@ async def vocabulary_flashcards(update: Update, context: ContextTypes.DEFAULT_TY
 
     # Create inline keyboard
     keyboard = [
-        [InlineKeyboardButton("I know", callback_data=f"vocab_know_{word}"),InlineKeyboardButton("I don't know", callback_data=f"vocab_dont_know_{word}")],
-        [InlineKeyboardButton("Change Level", callback_data="vocab_change_level")],
-        [InlineKeyboardButton("Stop", callback_data="vocab_stop")]
+        [InlineKeyboardButton("أعرفها ✅", callback_data=f"vocab_know_{word}"),InlineKeyboardButton("لا أعرفها ❌", callback_data=f"vocab_dont_know_{word}")],
+        [InlineKeyboardButton("تغيير مستوى المفردات 🔁", callback_data="vocab_change_level")],
+        [InlineKeyboardButton("إلغاء ❌", callback_data="vocab_stop")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     if update.callback_query:
-        await context.bot.send_message(chat_id=update.effective_chat.id , text=f"Do you know the word: {word}?", reply_markup=reply_markup)
+        await context.bot.send_message(chat_id=update.effective_chat.id , text=f"هل تعرف معنى الكلمة <strong><u>({word})</u></strong> ؟", reply_markup=reply_markup,parse_mode="HTML")
         # await update.callback_query.edit_message_text(f"Do you know the word: {word}?", reply_markup=reply_markup)
     else:
-        await update.message.reply_text(f"Do you know the word: {word}?", reply_markup=reply_markup)
+        await update.message.reply_text(f"هل تعرف معنى الكلمة <strong><u>({word})</u></strong> ؟", reply_markup=reply_markup,parse_mode="HTML")
 
 async def vocabulary_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -1636,7 +1486,7 @@ async def vocabulary_callback(update: Update, context: ContextTypes.DEFAULT_TYPE
         vocab_know = set(user_data.data[0]['vocab_know']) if user_data.data and user_data.data[0]['vocab_know'] else set()
         vocab_know.add(word)
         await supabase_update("users", {"vocab_know": list(vocab_know)}, "user_id", user_id)
-        await query.edit_message_text(f"Great! You know the word '{word}'. Let's move to the next word.")
+        await query.edit_message_text(f"رائع! أنت تعرف الكلمة '{word}'. دعنا ننتقل إلى الكلمة التالية.")
         await vocabulary_flashcards(update, context)
     elif action == "dont":
         # Add word to unknown words
@@ -1647,20 +1497,22 @@ async def vocabulary_callback(update: Update, context: ContextTypes.DEFAULT_TYPE
 
         # Get word definition using LLM
         prompt = f"Provide a simple definition and an example sentence for the word '{word}':"
+        prompt += f"\n\nto make it looks better and more organized you can use HTML style format <strong>bold</strong> for bold text this for the definition  , <ins>underline</ins> for underline text this for the meaning in Arabic and <blockquote> </blockquote> for examples also make it bold the examples\n\n please make sure to use them properly "
+        await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="TYPING")
         definition = await unify(prompt)
 
         keyboard = [
-            [InlineKeyboardButton("Next word", callback_data="vocab_next")],
-            [InlineKeyboardButton("Stop", callback_data="vocab_stop")]
+            [InlineKeyboardButton("الكلمة التالية ⬅️", callback_data="vocab_next")],
+            [InlineKeyboardButton("إلغاء ❌", callback_data="vocab_stop")]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
 
-        await query.edit_message_text(f"Word: {word}\n\n{definition}", reply_markup=reply_markup)
+        await query.edit_message_text(f"الكلمة: {word}\n\n{definition}", reply_markup=reply_markup,parse_mode="HTML")
     elif action == "next":
         await vocabulary_flashcards(update, context)
     elif action == "stop":
-        await query.edit_message_text("Vocabulary practice stopped. You can start again anytime!")
-
+        # await query.edit_message_text("Vocabulary practice stopped. You can start again anytime!")
+        await send_main_menu(update, context)
 
 
 async def vocabulary_recap(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -1671,7 +1523,7 @@ async def vocabulary_recap(update: Update, context: ContextTypes.DEFAULT_TYPE):
     vocab_know = set(user_data.data[0]['vocab_know']) if user_data.data and user_data.data[0]['vocab_know'] else set()
     vocab_dont_know = set(user_data.data[0]['vocab_dont_know']) if user_data.data and user_data.data[0]['vocab_dont_know'] else set()
     if not vocab_know and not vocab_dont_know:
-        await update.message.reply_text("You don't have any vocabulary to recap. Returning to the main menu.")
+        await update.message.reply_text("ليس لديك أي كلمات للمراجعة حاليا")
         await vocabulary_flashcards(update, context)
         return 
     # Combine known and unknown vocabularies
@@ -1686,9 +1538,9 @@ async def vocabulary_recap(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if not available_vocab:
         if update.callback_query:
-            await context.bot.send_message(chat_id=update.effective_chat.id, text="You've reviewed all your vocabulary for this session! Great job! Returning to the main menu.")
+            await context.bot.send_message(chat_id=update.effective_chat.id, text="ممتاز! لقد انتهيت من مراجعة كل المفردات لهذا اليوم")
         else:
-            await update.message.reply_text("You've reviewed all your vocabulary for this session! Great job! Returning to the main menu.")
+            await update.message.reply_text("ممتاز! لقد انتهيت من مراجعة كل المفردات لهذا اليوم")
         # Clear the recap session data
         context.user_data.pop('word_recap_session', None)
         await send_main_menu(update, context)
@@ -1702,7 +1554,15 @@ async def vocabulary_recap(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ["صحيح", "خاطئ1", "خاطئ2", "خاطئ3"]
     No additional text or explanation, just the list.
     """
-
+    await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="TYPING")
+    llm_response1 = await unify(prompt)
+    prompt = f"""
+    you will be given a list of four potential Arabic meanings for the English word '{word}'. The first meaning must be the correct meaning, while the other three should be incorrect 
+    your task is to check these options and they shoud be different in the meaning of the correct answer in Arabic if you find any option that be potentially have similar meaning to the correct answer please change it to another one and make sure that the correct answer is in the first place ["صحيح", "خاطئ1", "خاطئ2", "خاطئ3"] make sure the correct answer is the true meaning of the word {word} and other options are not the correct answers 
+    and you must return it as python list 
+    the list is {llm_response1}
+    """
+    await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="TYPING")
     llm_response = await unify(prompt)
     # print(llm_response)
     try:
@@ -1731,28 +1591,38 @@ async def vocabulary_recap(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         message = update.message
     # Create and send the poll
+    word = f"<u>({word})</u>"
+    keyboard = [
+        [InlineKeyboardButton("الكلمة التالية ⬅️", callback_data="word_recap_next")],
+        [InlineKeyboardButton("إلغاء ❌", callback_data="word_recap_stop")]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
     await message.reply_poll(
-        question=f"What's the meaning of '{word}'?",
+        question=f"مامعنى الكلمة {word}؟",
+        question_parse_mode="HTML",
         options=meanings,
         type=Poll.QUIZ,
         correct_option_id=correct_option_id,
-        explanation=f"The correct meaning of '{word}' is '{correct_meaning}'.",
-        is_anonymous=False
+        explanation=f"معنى الكلمة <strong><u>{word}</u></strong> هو <strong><u>{correct_meaning}</u></strong>.",
+        explanation_parse_mode="HTML",
+        is_anonymous=False,
+        reply_markup=reply_markup
     )
 
     # Add the word to the session's recap list
     context.user_data['word_recap_session'].append(word)
 
     # Provide option to continue or stop
-    keyboard = [
-        [InlineKeyboardButton("Next word", callback_data="word_recap_next")],
-        [InlineKeyboardButton("Stop", callback_data="word_recap_stop")]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    if update.callback_query:
-        await context.bot.send_message(chat_id=update.effective_chat.id, text="Would you like to continue or stop?", reply_markup=reply_markup)
-    else:
-        await update.message.reply_text("Would you like to continue or stop?", reply_markup=reply_markup)
+    # keyboard = [
+    #     [InlineKeyboardButton("الكلمة التالية ⬅️", callback_data="word_recap_next")],
+    #     [InlineKeyboardButton("إلغاء ❌", callback_data="word_recap_stop")]
+    # ]
+    # reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    # if update.callback_query:
+    #     await context.bot.send_message(chat_id=update.effective_chat.id, text="هل تريد الإستمرار أو التوقف", reply_markup=reply_markup)
+    # else:
+    #     await update.message.reply_text("هل تريد الإستمرار أو التوقف", reply_markup=reply_markup)
 
 
 async def ai_tutor(update: Update, context: ContextTypes.DEFAULT_TYPE,transcription):
@@ -1772,8 +1642,8 @@ async def ai_tutor(update: Update, context: ContextTypes.DEFAULT_TYPE,transcript
         [KeyboardButton("/stop")]
     ], resize_keyboard=True)
         await update.message.reply_text(
-            "Welcome to the AI English Tutor! You can ask me anything about English, and I'll do my best to help you. "
-            "You can type your questions or send voice messages. ",
+            "مرحبًا بك مع مدرس اللغة الانجليزية بالذكاء الاصطناعي! يمكنك أن تسألني عن أي شيء يتعلق باللغة الإنجليزية، وسأبذل قصارى جهدي لمساعدتك."
+            "تستطيع ان تتواصل معي عبر الكتابة أو الرسائل الصوتية🔥",
             reply_markup=keyboard
         )
         return
@@ -1790,19 +1660,53 @@ async def ai_tutor(update: Update, context: ContextTypes.DEFAULT_TYPE,transcript
         # print("transcription ",transcription)
         input_mode = 'voice'
         voice_mode = True
+    elif update.message.photo:
+        file = await context.bot.get_file(update.message.photo[-1].file_id)
+        image_bytes = await file.download_as_bytearray()
+        image = Image.open(io.BytesIO(image_bytes))
+        caption = update.message.caption if update.message.caption else "No caption provided"
+        input_mode = 'photo'
+        voice_mode = False
+        user_message = caption
     else:
-        await update.message.reply_text("Sorry, I can only process text or voice messages.")
+        await update.message.reply_text("عفوا يمكنك فقط التواصل معي عبر الرسائل النصية والصوتية")
         return
 
-    
-    
-    response = await get_ai_tutor_response(context.user_data['ai_tutor_history'], user_message, voice_mode)
-    
-    context.user_data['ai_tutor_history'].append({"user_question": user_message})
-    context.user_data['ai_tutor_history'].append({f"tutor_answer to the user question {user_message}": response })
+    if input_mode == 'voice':
+        await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="RECORD_VOICE")
+    elif input_mode == 'text':
+        await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="TYPING")
+    if input_mode == 'photo':
+        await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="TYPING")
+        history = context.user_data.get('ai_tutor_history',[])
+        describe = await gemini_ocr2(f"describe the image for me in details and what the user wants from it {caption} and if it contains text extract all the text from it ",image)
+        print("caption ",caption)
+        prompt = f"""
+        this is the caption provided by the user for the image:\n\n{caption}\n\n
+        to help you more you will be provided with the image description and image content:\n\n {describe}
+
+        """
+        # response = await gemini_ocr2(prompt,image)
+        response = await get_ai_tutor_response(context.user_data['ai_tutor_history'], prompt, voice_mode,True)
+        # print("describe ",describe)
+    else:
+        await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="TYPING")
+        response = await get_ai_tutor_response(context.user_data['ai_tutor_history'], user_message, voice_mode,False)
+    try:
+        if input_mode == 'photo':
+            context.user_data['ai_tutor_history'].append({"image_caption": caption})
+            context.user_data['ai_tutor_history'].append({f"tutor_answer to the image caption {caption}": response })
+            # context.user_data['ai_tutor_history'].append({f"image description of the image: {caption}": describe })
+        else:
+            context.user_data['ai_tutor_history'].append({"user_question": user_message})
+            context.user_data['ai_tutor_history'].append({f"tutor_answer to the user question {user_message}": response })
+    except Exception as e:
+        print(e)
     
     if input_mode == 'voice':
-        audio_file = await convert_text_to_audio(response, "Scarlett")
+        await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="RECORD_VOICE")
+        await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="RECORD_VOICE")
+        audio_file = await convert_text_to_audio(response, "Dan")
         try:
             with open(audio_file, 'rb') as audio:
                 await update.message.reply_voice(audio)
@@ -1815,11 +1719,11 @@ async def ai_tutor(update: Update, context: ContextTypes.DEFAULT_TYPE,transcript
                 os.remove(audio_file)
         
     else:
-        await update.message.reply_text(response)
+        await update.message.reply_text(response,parse_mode="HTML")
 
     # Update the AI tutor mode for the next interaction
     context.user_data['ai_tutor_mode'] = input_mode
-async def get_ai_tutor_response(history,user_message, voice_mode=False):
+async def get_ai_tutor_response(history,user_message, voice_mode=False,photo=False):
     # print("history ",history)
     # print("user_message ",user_message)
     unify_API = await api_key_supabase("unify")
@@ -1830,15 +1734,41 @@ async def get_ai_tutor_response(history,user_message, voice_mode=False):
     if voice_mode:
         
         system_prompt = f"You are an AI English tutor. Your goal is to help the user improve their English skills. Be patient, encouraging, and provide clear explanations. If the user makes mistakes, gently correct them and explain why. Adapt your language to the user's proficiency level. you will be asked questions from the student and you should answer them as if you are a real teacher. you should not add anything else just the answer to the question. to help you to be aware of the context of the question you will be provided with the chat history and the last message from the student this is the history of the char it contains student previous questions with your previous responses\n\n {history} \n\nyou can use the history as memory for you to remember previous chats, make your responses seem like a spoken conversation with the student, rather than a text-based interaction. your response should not be long make it short and concise"
+        
     else:
-        system_prompt = f"You are an AI English tutor. Your goal is to help the user improve their English skills. Be patient, encouraging, and provide clear explanations. If the user makes mistakes, gently correct them and explain why. Adapt your language to the user's proficiency level. you will be asked questions from the student and you should answer them as if you are a real teacher. you should not add anything else just the answer to the question. to help you to be aware of the context of the question you will be provided with the chat history and the last message from the student this is the history of the char it contains student previous questions with your previous responses\n\n {history} \n\nyou can use the history as memory for you to remember previous chats, Note if the user sent you his question in Arabic or any other language you should consider that and your response should be mixed in english and user language if sent it in only English respond in English"
+        if photo:
+            system_prompt = f"You are an AI English tutor. Your goal is to help the user improve their English skills. Be patient, encouraging, and provide clear explanations. If the user makes mistakes, gently correct them and explain why. Adapt your language to the user's proficiency level. you will be asked questions from the student and you should answer them as if you are a real teacher. you should not add anything else just the answer to the question. to help you to be aware of the context of the question you will be provided with the chat history and the last message from the student this is the history of the char it contains student previous questions with your previous responses\n\n {history} \n\nyou can use the history as memory for you to remember previous chats, Note if the user sent you his question in Arabic or any other language you should consider that and your response should be mixed in english and user language if sent it in only English respond in English \n\n another thing when the user asks you to explain something in English like grammar etc.. you should explain it in mixec Arabic and English the level of the user is beginner and needs the explanation in Arabic and english and you must explain them in detials and should be clear and simple to understand"
+            system_prompt += f"\n\nyou can use HTML style format <strong>bold</strong> for bold text, <ins>underline</ins> for underline text and <blockquote> </blockquote> this for examples. you can use this when it is aprpriate to use it and when it is not important don't you use it"
+        else:
+            system_prompt = f"""You are an AI English tutor. Your goal is to help the user improve their English skills. 
+        Be patient, encouraging, and provide clear explanations. If the user makes mistakes, 
+        gently correct them and explain why. Adapt your language to the user's proficiency level.
+        you will be asked questions from the student and you should answer them as if you are a real teacher. 
+        you should not add anything else just the answer to the question. 
+        to help you to be aware of the context of the question you will be provided with the chat history 
+        and the last message from the student this is the history of the char it contains student previous 
+        questions with your previous responses\n\n {history} \n\nyou can use the history as memory for you 
+        to remember previous chats, 
+        Here you will be given an image sent by the user and your task is to respond about what he wants from this image 
+        you can find what he wants from the caption of the image if the user requested anythig in the caption you must answer him in details and if there was no caption please ask him what he wants you to do in Arabic and english , and you should be smart enough to understand what he wants from the image and you should be able to do it
+        and if it is a question please answer it or if the user requested anything do it for him
+        and you should be aware of the context of the question and the image and you should be able to do it
+        your answer should be in the same language of the caption or the question or the request and be clear and simple to understand
+        """
+            system_prompt += f"\n\nyou can use HTML style format <strong>bold</strong> for bold text, <ins>underline</ins> for underline text and <blockquote> </blockquote> this for examples. you can use this when it is aprpriate to use it and when it is not important don't you use it"
+    if photo:
+        content = user_message
+    else:
+        
+        content = f"this is the last message from the student {user_message}"
+    # print("history \n\n",history)
     response = await client.chat.completions.create(
         model="gemini-1.5-flash-002@vertex-ai",
         messages=[{
             "role": "system",
             "content": system_prompt
         },
-                  {"role": "user", "content": f"this is the last message from the student {user_message}"}],
+                  {"role": "user", "content": content }],
         max_tokens=4096,
         temperature=0.0,
         stream=False
@@ -1850,9 +1780,63 @@ async def get_ai_tutor_response(history,user_message, voice_mode=False):
     return result
 
 
-
-
-
+async def reading_sources(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = "أفضل المصادر لتحسين مهارةالقراءة"
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+    text = "أفضل تطبيقات الجوال لتطوير مهارة القراءة"
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+    ph_list =["https://play.google.com/store/apps/details?id=com.ewa.ewaapp&pcampaignid=web_share","https://apps.apple.com/us/app/ewa-english-language-learning/id1200778841","https://play.google.com/store/apps/details?id=com.palmdev.expressenglish&pcampaignid=web_share","https://play.google.com/store/apps/details?id=com.google.android.apps.seekh&pcampaignid=web_share",]
+    for i in ph_list:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=i)
+    
+    text = "أفضل المواقع لتحسين مهارة القراءة"
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+    ph_list =["https://learnenglish.britishcouncil.org/skills/reading","https://medium.com","https://BBC.com",]
+    for i in ph_list:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=i)
+    
+    text = "أفضل الكتب لتحسين مهارة القراءة"
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+    ph_list =["https://t.me/Oxford_Bookwormss"]
+    for i in ph_list:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=i)
+    ph_list =["https://www.youtube.com/watch?v=Zo0WdtXNgv0","https://www.youtube.com/watch?v=7IvzjiomYks","https://www.youtube.com/watch?v=EFBGKdxFbNo"]
+    for i in ph_list:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=i)
+    
+    
+    
+    
+    
+    
+async def listening_sources(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text = "أفضل المصادر لحسين مهارة الاستماع في اللغة الإنجليزية"
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+    text ="أبرز البرامج الصوتيه (البودكاست) لتطوير مهارة الاستماع في اللغة الإنجليزية"
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+    ph_list =["https://learnenglish.britishcouncil.org/skills/listening","https://open.spotify.com/show/2kzXWXMAAPZYfwtan7F2R5","https://open.spotify.com/show/6qXldSz1Ulq1Nvj2JK5kSR","https://open.spotify.com/show/4X48gpjrctXNJWtOnUgwq8"]
+    for i in ph_list:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=i)
+    
+    # text = "أفضل المواقع لتحسين مهارة القراءة"
+    # await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+    # ph_list =["https://learnenglish.britishcouncil.org/skills/reading","https://medium.com","https://BBC.com",]
+    # for i in ph_list:
+    #     await context.bot.send_message(chat_id=update.effective_chat.id, text=i)
+    
+    text = "فيديوهات مميزة لكيفية تحسين مهارة الاستماع "
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+    ph_list =["https://www.youtube.com/watch?v=B4ellCG4u84", "https://www.youtube.com/watch?v=xf8737RwwbU","https://www.youtube.com/watch?v=nMC16FZhsUM"]
+    for i in ph_list:
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=i)
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="لاتنسى أيضا متابعة القنوات الأجنبية على اليوتيوب لتطوير مهارة الاستماع لديك")
+    
+async def writing_sources(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    pass
+async def speaking_sources(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    pass
+async def english_learning_plan(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    pass
 async def api_key_supabase(provider):
     import random
     import time
@@ -1923,6 +1907,47 @@ async def gemini_ocr(image_prompt, image_pil):
                 
                 # Access the text parts
                 extracted_text = ''.join(part.text for part in response.parts)
+                extracted_text = re.sub(r'\*', '', extracted_text)
+                extracted_text = re.sub(r'#', '', extracted_text)
+                if len(extracted_text.split()) < 10:
+                    raise Exception("Gemini Error it could not transcribe the text from the image")
+                return extracted_text
+            except Exception as e:
+                print(e)
+                retries += 1
+                continue
+        try:
+            await Qwen2_ocr(image_prompt, image_pil,"Qwen/Qwen2-VL-72B-Instruct")
+        except Exception as e:
+            print(e)
+            await Qwen2_ocr(image_prompt, image_pil,"mistralai/Pixtral-12B-2409")
+        
+    except Exception as e:
+
+        print(e)
+        raise Exception("Gemini and hyperbolic model Error it could not transcribe the text from the image")
+
+
+async def gemini_ocr2(image_prompt, image_pil):
+    max_retries = 5
+    retries = 0
+    
+    try:
+        while retries < max_retries:
+            try:
+                # keys = [gemini_api,gemini_api2]
+                # api_key = random.choice(keys)
+                api_key = await api_key_supabase("gemini")
+                genai.configure(api_key=api_key)
+                model_vision = genai.GenerativeModel('gemini-1.5-flash')
+                response = model_vision.generate_content([image_prompt, image_pil])
+                response.resolve()
+                # extracted_text = response.text
+                
+                # Access the text parts
+                extracted_text = ''.join(part.text for part in response.parts)
+                extracted_text = re.sub(r'\*', '', extracted_text)
+                extracted_text = re.sub(r'#', '', extracted_text)
                 if len(extracted_text.split()) < 10:
                     raise Exception("Gemini Error it could not transcribe the text from the image")
                 return extracted_text
@@ -2121,7 +2146,7 @@ async def make_request(text, examiner_voice,api):
       
       if examiner_voice == "" or examiner_voice == None:
           print("a problem in examiner voice: it is:",examiner_voice )
-          examiner_voice = "Liv"
+          examiner_voice = "Dan"
       
     #   unreal_speech_api = random.choice(unreal_speech_API_keys)
       response = requests.post(
@@ -2259,6 +2284,30 @@ async def convert_audio_to_text(file_id, update, context):
         await error_handler(update, context,text)
 
 
+async def wisperSTT(filename,update,context):
+    try:
+        # groq_api = await api_key_supabase("groq")
+        groq_api = "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"
+        client = Groq(api_key=groq_api)
+        # filename = os.path.dirname(__file__) + "/audio.m4a"
+        print(filename)
+        file = await context.bot.get_file(filename)
+            
+        file_path = file.file_path
+        print(file_path)
+        with open(file_path, "rb") as file:
+            transcription = client.audio.transcriptions.create(
+            file=(file_path, file.read()),
+            model="whisper-large-v3",
+            prompt="Transcribe the audio according to the language spoken. If the audio includes multiple languages, transcribe each part in its respective language. For instance, if a speaker uses both Arabic and English, write the Arabic parts in Arabic and the English parts in English within the same message.",
+            temperature=0.0,
+            response_format="verbose_json",
+            )
+            print(transcription.text)
+            return transcription.text
+    except Exception as e:
+        print(e)
+        return await convert_audio_to_text(filename,update,context)
 async def gemini_model(prompt):
             try:
                 # keys = [gemini_api,gemini_api2]
@@ -2282,9 +2331,9 @@ async def gemini_model(prompt):
 async def unify(prompt):
     try:
         result = await gemini_model(prompt)
-        result = re.sub(r'\*', '', result)
-        result = re.sub(r'#', '', result)
-        
+        # result = re.sub(r'\*', '', result)
+        # result = re.sub(r'#', '', result)
+        result = result.replace('*', '').replace('#', '')
         return result
     except Exception as e:
         unify_API = await api_key_supabase("unify")
@@ -2303,9 +2352,9 @@ async def unify(prompt):
                         )
                         
         result = response.choices[0].message.content
-        result = re.sub(r'\*', '', result)
-        result = re.sub(r'#', '', result)
-        
+        # result = re.sub(r'\*', '', result)
+        # result = re.sub(r'#', '', result)
+        result = result.replace('*', '').replace('#', '')
         return result
 
 
@@ -2316,9 +2365,7 @@ async def stop_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     # Send a message about stopping the current operation
     stop_message = (
-        "🛑 All current operations have been stopped.\n"
-        "Your session data has been cleared.\n"
-        "Returning to the main menu..."
+        "العودة الى القائمة الرئيسية"
     )
     if update.callback_query:
         await update.callback_query.edit_message_text(stop_message)
@@ -2367,7 +2414,7 @@ async def stop_spelling(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 
-BOT_TOKEN = "7515607864:AAHhFH6C82sgNDWjQOr7RwYZBBLJpCYS20k"
+BOT_TOKEN = "7844510473:AAGaz-6R3nLUZJCtCIb68LfoTLrBULSshvE"
 
 async def main():
     print("main")
