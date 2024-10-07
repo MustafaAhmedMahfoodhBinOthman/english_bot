@@ -3,9 +3,9 @@
 # grammar_exercises.py
 
 EXERCISES = {
-    "Tenses": {
-        "Present Tense": {
-            "Present Simple": [
+    "الأزمنة": {
+        "زمن المضارع": {
+            "المضارع البسيط": [
     {
         "question": "اختر الإجابة الصحيحة:\nShe ____ (go) to school every day.",
         "options": ["go", "goes", "going", "went"],
@@ -120,6 +120,7 @@ EXERCISES = {
         "correct_option_id": 1,
         "explanation": "الفاعل (The class) مفرد، لذا نضيف 's' للفعل (start)."
     },
+    
     {
         "question": "اختر الإجابة الصحيحة:\nWhy ____ (you/not/speak) to her?",
         "options": ["you not speak", "do you not speak", "you not speaks", "are you not speaking"],
@@ -225,7 +226,7 @@ EXERCISES = {
         "explanation": "بما أن الفاعل (She) مفرد، نضيف 's' للفعل (work) في المضارع البسيط."
     }
 ],
-            "Present Continuous": [
+            "المضارع المستمر": [
     {
         "question": "اختر الإجابة الصحيحة:\nShe ____ (read) a book right now.",
         "options": ["reads", "is reading", "read", "is read"],
@@ -522,7 +523,7 @@ EXERCISES = {
     }
 ],
 
-            "Present Perfect": [
+            "المضارع التام": [
     {
         "question": "اختر الإجابة الصحيحة:\nI ____ (finish) my homework.",
         "options": ["has finished", "finishing", "have finished", "finished"],
@@ -824,7 +825,7 @@ EXERCISES = {
         "explanation": "مع (I) نستخدم have known في المضارع التام."
     }
 ],
-            "Present Perfect Continuous": [
+            "المضارع التام المستمر": [
     {
         "question": "اختر الإجابة الصحيحة:\nI ____ (study) for three hours.",
         "options": ["study", "have been studying", "am studying", "studied"],
@@ -1079,8 +1080,8 @@ EXERCISES = {
     }
 ]
         },
-        "Past Tense": {
-            "Past Simple": [
+        "زمن الماضي": {
+            "الماضي البسيط": [
     {
         "question": "اختر الإجابة الصحيحة:\nI ____ (visit) my grandparents last week.",
         "options": ["visit", "have visited", "was visiting", "visited"],
@@ -1340,7 +1341,7 @@ EXERCISES = {
         "explanation": "الغناء حدث وانتهى، نستخدم sang."
     }
 ],
-            "Past Continuous": [
+            "الماضي المستمر": [
     {
         "question": "اختر الإجابة الصحيحة:\nI ____ (watch) TV when she called.",
         "options": ["watch", "was watched", "watched", "was watching"],
@@ -1594,7 +1595,7 @@ EXERCISES = {
         "explanation": "Past Continuous لوصف فعل مستمر في الماضي، نستخدم were eating."
     }
 ],
-            "Past Perfect": [
+            "الماضي التام": [
     {
         "question": "اختر الإجابة الصحيحة:\nI ____ (finish) my homework before dinner.",
         "options": ["finished", "have finished", "was finishing", "had finished"],
@@ -1824,7 +1825,7 @@ EXERCISES = {
         "explanation": "العيش في ذلك المنزل (live) حدث *قبل* الانتقال (moving).  Past Perfect (had lived) يوضح هذا التسلسل الزمني، مع for five years للدلالة على مدة زمنية سابقة."
     }
 ],
-            "Past Perfect Continuous": [
+            "الماضي التام المستمر": [
     {
         "question": "اختر الإجابة الصحيحة:\nI ____ (study) for three hours before the exam started.",
         "options": ["have studied", "studied", "had been studying", "was studying"],
@@ -2067,8 +2068,8 @@ EXERCISES = {
     }
 ]
         },
-        "Future Tense": {
-            "Future Simple": [
+        "زمن المستقبل": {
+            "المستقبل البسيط": [
     {
         "question": "اختر الإجابة الصحيحة:\nI ____ (go) to the store tomorrow.",
         "options": ["go", "am going", "was going", "will go"],
@@ -2310,7 +2311,7 @@ EXERCISES = {
         "explanation": "استخدام 'won't see' يُعبر عن عدم رؤية هؤلاء الأشخاص غداً.  'won't' هو الشكل المُختصر والمُناسب لنفي نية مستقبلية."
     }
 ],
-            "Future Continuous": [
+            "المستقبل المستمر": [
     {
         "question": "اختر الإجابة الصحيحة:\nWhat will I be ____ (do) at this time tomorrow?",
         "options": ["do", "done", "doing", "did"],
@@ -2552,7 +2553,7 @@ EXERCISES = {
         "explanation": "Future Continuous (will be + فعل + ing) يُستخدم لوصف فعل مستمرّ في المستقبل.  'enjoying'  تصفُّ فعلًا مستمرًا (الاستمتاع)  في زمن مُحدد (الأسبوع القادم)."
     }
 ],
-            "Future Perfect": [
+            "المستقبل التام": [
     {
         "question": "اختر الإجابة الصحيحة:\nBy next week, I ____ (finish) this project.",
         "options": ["will finish", "will have finished", "finish", "am finishing"],
@@ -2902,7 +2903,7 @@ EXERCISES = {
         "explanation": "Future Perfect منفي يُستخدم للتعبير عن عدم اكتمال الفعل قبل وقت محدد في المستقبل.  'Before he leaves for work'  يحدد وقتًا مستقبليًا."
     }
 ],
-            "Future Perfect Continuous": [
+            "المستقبل التام المستمر": [
   {
     "question": "اختر الإجابة الصحيحة:\nBy next week, I ____ (study) for two months.",
     "options": ["will study", "will be studying", "will have been studying", "have been studying"],
@@ -3494,8 +3495,8 @@ EXERCISES = {
 ]
         }
     },
-    "Parts of Speech":{
-        "Nouns": [
+    "أجزاء الكلام":{
+        "الأسماء": [
     {
         "question": "اختر الإجابة الصحيحة:\nWhich word is a noun? ",
         "options": ["quickly", "run", "cat", "happy"],
@@ -3840,7 +3841,7 @@ EXERCISES = {
     }
 ],
         
-        "Verbs" : [
+        "الأفعال" : [
     {
         "question": "اختر الإجابة الصحيحة:\nIdentify the verb in the sentence: 'The birds sang sweetly in the morning'.",
         "options": ["birds", "sweetly", "sang", "morning"],
@@ -4304,7 +4305,7 @@ EXERCISES = {
         "explanation": "Past Continuous (was/were + present participle) يُستخدم للتعبير عن فعلٍ مستمرّ في الماضي."
     }
 ],
-        "Adjectives" : [
+        "الصفات" : [
     {
         "question": "اختر الإجابة الصحيحة:\nWhich word is an adjective?",
         "options": ["quickly", "run", "big", "happy"],
@@ -4678,7 +4679,7 @@ EXERCISES = {
         "explanation": "نستخدم الصفة المقارنة 'stronger'  لأننا نقارن بين شيئين (القهوة والشاي).  'stronger'  تُشير إلى أنّ القهوة أقوى من الشاي من حيث النكهة.  نستخدم الصفة المقارنة عند مقارنة شيئين،  وهي تُشير إلى درجة أعلى من الصفة."
     },
         ],
-    "Adverbs": [
+    "الظرف-الحال": [
     {
         "question": "اختر الإجابة الصحيحة:\nIdentify the adverb in the sentence: 'The bird sang sweetly'.",
         "options": ["bird", "sang", "sweetly", "the"],
@@ -5041,7 +5042,7 @@ EXERCISES = {
             },
         
         ],
-    "Pronouns": [
+    "الضمائر": [
     {
         "question": "اختر الإجابة الصحيحة:\nIdentify the pronoun in this sentence: 'She went to the store'.",
         "options": ["She", "went", "to", "store"],
@@ -5594,7 +5595,7 @@ EXERCISES = {
         "correct_option_id": 0,
         "explanation": "them هو ضمير مفعول به (object pronoun) للجمع."
     },],
-    "Prepositions": [
+    "حروف الجر": [
     {
         "question": "اختر الإجابة الصحيحة:\nComplete the sentence: The book is ____ the table.",
         "options": ["on", "at", "in", "to"],
@@ -6088,7 +6089,7 @@ EXERCISES = {
         "explanation": "استخدمنا حرف الجرّ 'at'  لأنه يُشير إلى  مكان محددّ وصغير نسبيًا."
     },],
     
-    "Conjunctions": [
+    "حروف العطف": [
             {
         "question": "اختر الإجابة الصحيحة:\nIdentify the conjunction in the sentence: 'The sun is shining, and the birds are singing'.",
         "options": ["sun", "shining", "and", "birds"],
@@ -6576,7 +6577,7 @@ EXERCISES = {
         "explanation": "نستخدم 'and'  لأنها تربط جملتين إيجابيتين تُعبّران عن صفتين إيجابيتين للشخص."
     },
     ],
-    "Articles": [
+    "أدوات التعريف": [
             {
         "question": "اختر الإجابة الصحيحة:\nComplete the sentence: I saw ____ dog in the park.",
         "options": ["a", "an", "the", "no article"],
@@ -7040,7 +7041,7 @@ EXERCISES = {
         "explanation": "لا نستخدم أيّة مادة (no article)  قبل الأسماء غير القابلة للعدّ.  tea اسم غير قابل للعدّ."
     },
     ],
-    "Modal Verbs": [
+    "الأفعال الناقصة": [
             {
         "question": "اختر الإجابة الصحيحة:\nComplete the sentence: I ____ go to the party tonight.",
         "options": ["can", "may", "might", "must"],
@@ -7318,7 +7319,7 @@ EXERCISES = {
         "explanation": "استخدمنا 'should have'  للتعبير عن  اللوم  على  عدم  الإخبار  سابقًا.  'Should have told'  تُشير  إلى  أنّه  كان  يجب  عليه  أن  يخبر،  وهو  يُعبّر عن  ندمٍ  أو  لومٍ  على  فعلٍ  ماضٍ.  'Should have'  تُستخدم  للتعبير عن  اللوم  أو  النصيحة  في  الماضي،  مع  دلالة  أقل  على  الواجب  من  'ought to have'.  يُعبّر  هذا  التعبير  عن  ندمٍ  أو  لومٍ  لعدم  إخبار  المتكلم  في  الماضي."
     },
     ],
-"If-Clauses": [
+"الجمل الشرطية": [
         {
         "question": "اختر الإجابة الصحيحة:\nWhich sentence correctly uses the zero conditional?",
         "options": ["A. If you heat ice, it melts.", "B. If you heat ice, it will melt.", "C. If you heated ice, it would melt.", "D. If you had heated ice, it would have melted."],
@@ -7916,8 +7917,8 @@ EXERCISES = {
 ],
 
 },
-"Sentence Structure":{
-    "Simple Sentences": [
+"تركيب الجملة":{
+    "الجمل البسيطة": [
         
     {
         "question": "اختر الإجابة الصحيحة:\nWhich sentence contains only one independent clause (one complete thought)?",
@@ -8371,7 +8372,7 @@ EXERCISES = {
     }
 
 ],
-    "Compound Sentences":[
+    "الجمل المركبة":[
         {
         "question": "اختر الإجابة الصحيحة:\nWhich of the following sentences is a compound sentence, correctly joined by a coordinating conjunction?",
         "options": ["A. The dog barked loudly; the cat hissed.", "B.  The sun was shining, and the birds were singing.", "C. Although it was raining, they played outside.", "D.  Before the race, the runners stretched."],
@@ -8925,7 +8926,7 @@ EXERCISES = {
         "explanation": "الجملة \"We walked in the park, but then it started to rain\" جملة مركبة لأنها تتكون من جملتين بسيطتين مستقلتين مرتبطتين برابطة وصل (but).  كل جملة تامة المعنى بذاتها."
     },
     ],
-    "Complex Sentences": [
+    "الجمل المعقدة": [
                 {
         "question": "اختر الإجابة الصحيحة:\nWhich sentence is a complex sentence?",
         "options": ["A. The dog barked, and the cat ran.", "B. Although it was raining, he went for a walk.", "C. She laughed, then she cried.", "D. The sun shone brightly."],
@@ -9263,7 +9264,7 @@ EXERCISES = {
         "explanation": "نعم، لأنها تحتوي على جملة رئيسية (the phone rang) وجملة تابعة ظرفية (While she was sleeping)."
     },
     ],
-    "Compound-Complex Sentences": [
+    "الجمل المركبة المعقدة": [
             {
         "question": "اختر الإجابة الصحيحة:\nWhich sentence is a compound-complex sentence?",
         "options": ["A. The dog barked, and the cat ran away.", "B. Although it was raining, he went for a walk, and he enjoyed the fresh air.", "C. She laughed, then she cried.", "D. The sun shone brightly."],
@@ -9537,8 +9538,8 @@ EXERCISES = {
     ],
 
 } ,  
-"Punctuation":{
-    "Commas": [
+"علامات الترقيم":{
+    "(,) الفاصلة": [
     {
         "question": "اختر الإجابة الصحيحة:\nWhich sentence uses commas correctly?",
         "options": ["A. The dog, a golden retriever, wagged its tail excitedly.", "B. The dog a golden retriever wagged its tail excitedly.", "C. The dog, a golden retriever wagged, its tail excitedly.", "D. The dog a golden retriever, wagged its tail excitedly."],
@@ -9726,7 +9727,7 @@ EXERCISES = {
         "correct_option_id": 0,
         "explanation": "في هذه الجملة،  \"England\"  تُعدّ  مُكمّلاً  لـ \"London\"   وتعمل على توضيحها،  لذلك يجب فصلها بفاصلتين."
     }],
-    "Periods": [
+    "(.) نقطة نهاية الجملة": [
         {
         "question": "اختر الإجابة الصحيحة:\nWhich sentence correctly uses a period?",
         "options": ["A. The cat sat on the mat", "B. The dog barked loudly", "C. She went to the store.", "D. The sun is shining"],
@@ -9872,7 +9873,7 @@ EXERCISES = {
         "explanation": "الجملة \"The children are sleeping.\"  هي الجملة الوحيدة التي تنتهي بنقطة بشكل صحيح. "
     }
 ],
-    "Question Marks": [
+    "(؟) علامة الإستفهام": [
     {
         "question": "اختر الإجابة الصحيحة:\nWhich sentence correctly uses a question mark?",
         "options": ["A. What time is it?", "B. What time is it", "C. What time is it.", "D. What time, is it."],
@@ -10006,7 +10007,7 @@ EXERCISES = {
         "explanation": "عندما يُعبّر السؤال عن شك أو عدم تأكد  يجب أن ينتهي بعلامة استفهام.  الخيار الصحيح هو:  \"Is that really true?\""
     }
 ],
-    "Exclamation Points": [
+    "(!) علامة التعجب": [
     {
         "question": "اختر الإجابة الصحيحة:\nWhich sentence correctly uses an exclamation point?",
         "options": ["A. Wow! That's amazing!", "B. Wow. That's amazing.", "C. Wow, that's amazing!", "D. Wow That's amazing!"],
@@ -10182,7 +10183,7 @@ EXERCISES = {
         "explanation": "الجملة \"She said, \"Thank you.\"\"  هي جملة خبرية تنقل حوارًا، ولا تحتاج إلى علامة تعجب."
     }
 ],
-    "Semicolons": [
+    "(;) فاصلة منقوطة": [
     {
         "question": "اختر الإجابة الصحيحة:\nWhich sentence correctly uses a semicolon?",
         "options": ["A. The dog barked; the cat ran away.", "B. The dog barked, the cat ran away.", "C. The dog barked. The cat ran away.", "D. The dog barked and the cat ran away."],
@@ -10364,7 +10365,7 @@ EXERCISES = {
         "explanation": "في الجملة  \"The dog barked; and the cat meowed.\",  تم استخدام الفاصلة المنقوطة مع رابط وصل (and).   هذا خطأ  لأنه يجب استخدام إما الفاصلة المنقوطة  أو رابط الوصل،  وليس كليهما معًا.  الخيار الصحيح هو:  \"The dog barked; the cat meowed.\"   أو  \"The dog barked, and the cat meowed.\""
     },
 ],
-    "Colons": [
+    "(:) نقطتان": [
     {
         "question": "اختر الإجابة الصحيحة:\nWhich sentence correctly uses a colon?",
         "options": ["A. I need to buy the following groceries milk, bread, and eggs.", "B. I need to buy the following groceries: milk, bread, and eggs.", "C. I need to buy the following groceries, milk, bread, and eggs.", "D. I need to buy: the following groceries milk, bread, and eggs."],
@@ -10480,7 +10481,7 @@ EXERCISES = {
         "explanation": "تُستخدم النقطتان الرأسيتان لإدخال سلسلة من التعابير الوصفية (appositives)  التي تُوضّح  أو تُفسّر  اسمًا  أو عبارة  سبق ذكرها.  الخيار  \"He has many talents: playing the piano, singing, and dancing.\"  هو الجملة الوحيدة التي تستخدم النقطتان الرأسيتان بشكل صحيح."
     }
 ],
-    "Quotation Marks": [
+    '("") علامة الاقتباس': [
             {
         "question": "اختر الإجابة الصحيحة:\nWhich sentence correctly uses quotation marks?",
         "options": ["A. “Where are you going?” she asked.", "B.  “Where are you going? she asked.”", "C. “Where are you going?”” she asked.", "D.  “Where are you going”? she asked."],
@@ -10615,7 +10616,7 @@ EXERCISES = {
     }
 
     ],
-    "Dash": [
+    "(-) الشرطة": [
     {
         "question": "اختر الإجابة الصحيحة:\nWhich sentence correctly uses a dash?",
         "options": ["A.  She loves to travel - especially to exotic destinations.", "B.  She loves to travel-especially to exotic destinations.", "C.  She loves to travel especially - to exotic destinations.", "D.  She loves to travel especially to exotic destinations."],
