@@ -15,7 +15,7 @@ from telegram.error import Forbidden, TelegramError
 from datetime import datetime, timedelta
 from flask import Flask, app
 from telegram.request import HTTPXRequest
-# from groq import Groq
+from groq import Groq
 from deepgram import DeepgramClient, PrerecordedOptions, SpeakOptions
 from dotenv import load_dotenv
 from functools import partial
@@ -308,10 +308,12 @@ async def pronunciation_get(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton("إلغاء ❌", callback_data='pronunciation_stop')]
     ])
     try:
-        await update.callback_query.message.reply_voice(audio_file)
+        with open(audio_file, 'rb') as audio:
+            await update.callback_query.message.reply_voice(audio)
     except Exception as e:
         print(e)
-        raise Exception("pronunciation practice", e)
+        with open(audio_file, 'rb') as audio:
+            await context.bot.send_voice(chat_id=update.effective_chat.id, voice=audio)
         # await update.callback_query.message.reply_text(current_sentence)
     finally:
         if os.path.exists(audio_file):
@@ -647,9 +649,12 @@ async def spelling_practice_process(update: Update, context: ContextTypes.DEFAUL
         audio_file = await deepgram_tts(word, preferred_accent)
     
     try:
-        await update.effective_message.reply_voice(audio_file)
+        with open(audio_file, 'rb') as audio:
+            await update.effective_message.reply_voice(audio)
     except Exception as e:
         print(e)
+        with open(audio_file, 'rb') as audio:
+            await context.bot.send_voice(chat_id=update.effective_chat.id, voice=audio)
     finally:
             # Delete the file after sending
             if os.path.exists(audio_file):
@@ -1712,7 +1717,9 @@ async def ai_tutor(update: Update, context: ContextTypes.DEFAULT_TYPE,transcript
                 await update.message.reply_voice(audio)
         except Exception as e:
             print(e)
-            await update.message.reply_text(response)
+            # await update.message.reply_text(response)
+            with open(audio_file, 'rb') as audio:
+                await context.bot.send_voice(chat_id=update.effective_chat.id, voice=audio)
         finally:
             # Delete the file after sending
             if os.path.exists(audio_file):
