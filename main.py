@@ -15,7 +15,6 @@ from telegram.error import Forbidden, TelegramError
 from datetime import datetime, timedelta
 from flask import Flask, app
 from telegram.request import HTTPXRequest
-# from groq import Groq
 from deepgram import DeepgramClient, PrerecordedOptions, SpeakOptions
 from dotenv import load_dotenv
 from functools import partial
@@ -294,14 +293,16 @@ async def pronunciation_get(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_data = await supabase_select("users", "preferred_accent", "user_id", user_id)
     preferred_accent = user_data.data[0]['preferred_accent'] if user_data.data else "American"
 
-    if preferred_accent == "American":
-        preferred_accent = "Dan"
-        await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="RECORD_VOICE")
-        audio_file = await convert_text_to_audio(current_sentence, preferred_accent)
-    elif preferred_accent == "British":
-        preferred_accent = "aura-athena-en"
-        audio_file = await deepgram_tts(current_sentence, preferred_accent)
-
+    # if preferred_accent == "American":
+    #     preferred_accent = "Dan"
+    #     await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="RECORD_VOICE")
+    #     audio_file = await convert_text_to_audio(current_sentence, preferred_accent)
+    # elif preferred_accent == "British":
+    #     preferred_accent = "aura-athena-en"
+    #     audio_file = await deepgram_tts(current_sentence, preferred_accent)
+    preferred_accent = "Dan"
+    await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="RECORD_VOICE")
+    audio_file = await convert_text_to_audio(current_sentence, preferred_accent)
     keyboard = InlineKeyboardMarkup([
         [InlineKeyboardButton("حاول مرة أخرى 🔁", callback_data='pronunciation_try_again'),
          InlineKeyboardButton("التالي ⬅️", callback_data='pronunciation_next')],
@@ -409,14 +410,16 @@ do not include * or # in the text
         user_id = update.effective_user.id
         user_data = await supabase_select("users", "preferred_accent", "user_id", user_id)
         preferred_accent = user_data.data[0]['preferred_accent'] if user_data.data else "American"
-        if preferred_accent == "American":
-            preferred_accent = "Dan"
-            await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="RECORD_VOICE")
-            audio_file = await convert_text_to_audio(word, "Dan")
-        elif preferred_accent == "British":
-            preferred_accent = "aura-athena-en"
-            audio_file = await deepgram_tts(word, preferred_accent)
-        
+        # if preferred_accent == "American":
+        #     preferred_accent = "Dan"
+        #     await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="RECORD_VOICE")
+        #     audio_file = await convert_text_to_audio(word, "Dan")
+        # elif preferred_accent == "British":
+        #     preferred_accent = "aura-athena-en"
+        #     audio_file = await deepgram_tts(word, preferred_accent)
+        preferred_accent = "Dan"
+        await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="RECORD_VOICE")
+        audio_file = await convert_text_to_audio(word, preferred_accent)
         try:
             with open(audio_file, 'rb') as audio:
                 await update.message.reply_voice(audio)
@@ -640,14 +643,16 @@ async def spelling_practice_process(update: Update, context: ContextTypes.DEFAUL
     user_id = update.effective_user.id
     user_data = await supabase_select("users", "preferred_accent", "user_id", user_id)
     preferred_accent = user_data.data[0]['preferred_accent'] if user_data.data else "American"
-    if preferred_accent == "American":
-        preferred_accent = "Dan"
-        await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="RECORD_VOICE")
-        audio_file = await convert_text_to_audio(word, preferred_accent)
-    elif preferred_accent == "British":
-        preferred_accent = "aura-athena-en"
-        audio_file = await deepgram_tts(word, preferred_accent)
-    
+    # if preferred_accent == "American":
+    #     preferred_accent = "Dan"
+    #     await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="RECORD_VOICE")
+    #     audio_file = await convert_text_to_audio(word, preferred_accent)
+    # elif preferred_accent == "British":
+    #     preferred_accent = "aura-athena-en"
+    #     audio_file = await deepgram_tts(word, preferred_accent)
+    await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="RECORD_VOICE")
+    audio_file = await convert_text_to_audio(word, "Dan")
+    # print(audio_file)
     try:
         with open(audio_file, 'rb') as audio:
             await update.effective_message.reply_voice(audio)
@@ -657,8 +662,11 @@ async def spelling_practice_process(update: Update, context: ContextTypes.DEFAUL
             await context.bot.send_voice(chat_id=update.effective_chat.id, voice=audio)
     finally:
             # Delete the file after sending
-            if os.path.exists(audio_file):
-                os.remove(audio_file)
+            try:
+                if os.path.exists(audio_file):
+                    os.remove(audio_file)
+            except Exception as e:
+                print(e)
     await update.effective_message.reply_text("يرجى كتابة الكلمة/الجملة التي قمت بالإستماع إليها:", reply_markup=keyboard)
 
 
@@ -2291,30 +2299,30 @@ async def convert_audio_to_text(file_id, update, context):
         await error_handler(update, context,text)
 
 
-async def wisperSTT(filename,update,context):
-    try:
-        # groq_api = await api_key_supabase("groq")
-        groq_api = "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"
-        client = Groq(api_key=groq_api)
-        # filename = os.path.dirname(__file__) + "/audio.m4a"
-        print(filename)
-        file = await context.bot.get_file(filename)
+# async def wisperSTT(filename,update,context):
+#     try:
+#         # groq_api = await api_key_supabase("groq")
+#         groq_api = "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"
+#         client = Groq(api_key=groq_api)
+#         # filename = os.path.dirname(__file__) + "/audio.m4a"
+#         print(filename)
+#         file = await context.bot.get_file(filename)
             
-        file_path = file.file_path
-        print(file_path)
-        with open(file_path, "rb") as file:
-            transcription = client.audio.transcriptions.create(
-            file=(file_path, file.read()),
-            model="whisper-large-v3",
-            prompt="Transcribe the audio according to the language spoken. If the audio includes multiple languages, transcribe each part in its respective language. For instance, if a speaker uses both Arabic and English, write the Arabic parts in Arabic and the English parts in English within the same message.",
-            temperature=0.0,
-            response_format="verbose_json",
-            )
-            print(transcription.text)
-            return transcription.text
-    except Exception as e:
-        print(e)
-        return await convert_audio_to_text(filename,update,context)
+#         file_path = file.file_path
+#         print(file_path)
+#         with open(file_path, "rb") as file:
+#             transcription = client.audio.transcriptions.create(
+#             file=(file_path, file.read()),
+#             model="whisper-large-v3",
+#             prompt="Transcribe the audio according to the language spoken. If the audio includes multiple languages, transcribe each part in its respective language. For instance, if a speaker uses both Arabic and English, write the Arabic parts in Arabic and the English parts in English within the same message.",
+#             temperature=0.0,
+#             response_format="verbose_json",
+#             )
+#             print(transcription.text)
+#             return transcription.text
+#     except Exception as e:
+#         print(e)
+#         return await convert_audio_to_text(filename,update,context)
 async def gemini_model(prompt):
             try:
                 # keys = [gemini_api,gemini_api2]
@@ -2422,7 +2430,7 @@ async def stop_spelling(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 BOT_TOKEN = "7844510473:AAGaz-6R3nLUZJCtCIb68LfoTLrBULSshvE"
-
+# BOT_TOKEN = "7515607864:AAHhFH6C82sgNDWjQOr7RwYZBBLJpCYS20k"
 async def main():
     print("main")
     request = HTTPXRequest(
