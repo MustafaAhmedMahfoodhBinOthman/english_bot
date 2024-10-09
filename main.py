@@ -8,7 +8,6 @@ import json
 import random
 import traceback
 import ast
-
 from openai import OpenAI
 from telegram import CallbackQuery, Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton,ReplyKeyboardRemove,Poll
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, CallbackQueryHandler,PollAnswerHandler
@@ -1959,7 +1958,7 @@ async def ai_tutor(update: Update, context: ContextTypes.DEFAULT_TYPE,transcript
         # context.user_data['ai_tutor_history'].append(system_message)
         keyboard = ReplyKeyboardMarkup([
         # [KeyboardButton("📚 Dictionary")],
-        [KeyboardButton("القائمة الرئيسية")]
+        [KeyboardButton("/stop")]
     ], resize_keyboard=True)
         await update.message.reply_text(
             "مرحبًا بك مع مدرس اللغة الانجليزية بالذكاء الاصطناعي! يمكنك أن تسألني عن أي شيء يتعلق باللغة الإنجليزية، وسأبذل قصارى جهدي لمساعدتك."
