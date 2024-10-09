@@ -419,7 +419,7 @@ import json
 import random
 import traceback
 import ast
-import yt_dlp
+# import yt_dlp
 from openai import OpenAI
 from telegram import CallbackQuery, Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton,ReplyKeyboardRemove,Poll
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, CallbackQueryHandler
