@@ -7,9 +7,10 @@ import json
 import random
 import traceback
 import ast
+# from pytube import YouTube
 from openai import OpenAI
 from telegram import CallbackQuery, Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton,ReplyKeyboardRemove,Poll
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, CallbackQueryHandler
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, CallbackQueryHandler,PollAnswerHandler
 from telegram.error import BadRequest, NetworkError, TimedOut
 from telegram.error import Forbidden, TelegramError
 from datetime import datetime, timedelta
@@ -214,22 +215,453 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             elif action == 'dont':
                 await remove_keyboard(update,context)
                 word = data.split('_')[3]
-                print("word_dont",word)
+                # print("word_dont",word)
                 # Add word to unknown words
                 user_data = await supabase_select("users", "vocab_dont_know", "user_id", user_id)
                 vocab_dont_know = set(user_data.data[0]['vocab_dont_know']) if user_data.data and user_data.data[0]['vocab_dont_know'] else set()
                 vocab_dont_know.add(word)
                 await supabase_update("users", {"vocab_dont_know": list(vocab_dont_know)}, "user_id", user_id)
                 # Get word definition using LLM
-                prompt = f"You are English teacher and your task is to provide a simple definition including the meaning and an example sentence in English for the word '{word}': follow this template the word:\n its most common meaning/s in Arabic 4 maximum \n\n (Definition: write it in English and translate it to Arabic. do not forget to translate it to arabic) \n\n 1 or 2 Examples: in English \n only this do not write anything else, you should organize the text and make it readable in telegram and do not forget include the Arabic text without the way of pronounce it in english just the arabic text  and you should provide accurate result"
+                prompt = f"You are English teacher and your task is to provide a simple definition including the meaning and an example sentence in English for the word '{word}': follow this template the word:\n its most common meaning/s in Arabic 4 maximum \n\n (Definition: write it in English and translate it to Arabic the definition should be in English and Arabic. do not forget to translate it to arabic) \n\n 1 or 2 Examples: in English \n only this do not write anything else, you should organize the text and make it readable in telegram and do not forget include the Arabic text without the way of pronounce it in english just the arabic text  and you should provide accurate result"
                 prompt += f"to make it looks better and more organized you can use HTML style format <strong>bold</strong> for bold text this for the definition  , <ins>underline</ins> for underline text this for the meaning in Arabic and <blockquote> </blockquote> for examples also make it bold the examples\n\n please make sure to use them properly "
                 await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="TYPING")
                 definition = await unify(prompt)
+                
                 keyboard = [
                     [InlineKeyboardButton("الكلمة التالية ⬅️", callback_data="vocab_next"),InlineKeyboardButton("إلغاء ❌", callback_data="vocab_stop")],
                 ]
                 reply_markup = InlineKeyboardMarkup(keyboard)
-                await context.bot.send_message(chat_id=update.effective_chat.id, text=f"{definition}", reply_markup=reply_markup,parse_mode="HTML")
+                await context.bot.send_message(chat_id=update.effective_chat.id, text=f"{definition}",parse_mode="HTML")
+                await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="RECORD_VOICE")
+                file_audio = await convert_text_to_audio(word, "Dan")
+                with open(file_audio, 'rb') as audio:
+                    await context.bot.send_voice(chat_id=update.effective_chat.id, voice=audio,reply_markup=reply_markup,caption=f"نطق الكلمة <u>{word}</u>",parse_mode="HTML")
+                if os.path.exists(file_audio):
+                    os.remove(file_audio)
+            elif action == 'next':
+                await remove_keyboard(update,context)
+                await vocabulary_flashcards(update, context)
+            elif action == 'stop':
+                await remove_keyboard(update,context)
+                # await send_main_menu(update, context)
+                # await context.bot.send_message(chat_id=update.effective_chat.id, text="Vocabulary practice stopped. You can start again anytime!")
+                # await query.edit_message_text("Vocabulary practice stopped. You can start again anytime!")
+                await send_main_menu(update, context)
+            elif action == 'change':
+                await remove_keyboard(update,context)
+                keyboard = [
+                    [InlineKeyboardButton("سهلة (A1 - A2)", callback_data="change_level_simple")],
+                    [InlineKeyboardButton("متوسطة (B1 - B2)", callback_data="change_level_medium")],
+                    [InlineKeyboardButton("صعبة (B2 - C1)", callback_data="change_level_hard")]
+                ]
+                reply_markup = InlineKeyboardMarkup(keyboard)
+                await context.bot.send_message(chat_id=update.effective_chat.id, text="اختر مستوى صعوبة المفردات:", reply_markup=reply_markup) 
+                # await query.edit_message_text(
+                #     "Choose your preferred vocabulary level:",
+                    #     reply_markup=reply_markup
+                    # )
+        elif data.startswith('change_level_'):
+            await remove_keyboard(update,context)
+            level = data.split('_')[2]
+            await supabase_update("users", {"vocab_level": level}, "user_id", user_id)
+            await vocabulary_flashcards(update, context)
+        elif data.startswith('word_recap_'):
+            action = data.split('_')[2]
+            if action == 'next':
+                await remove_keyboard(update,context)
+                await vocabulary_recap(update, context)
+            elif action == 'stop':
+                await remove_keyboard(update,context)
+                context.user_data.pop('word_recap_session', None)
+                # await context.bot.send_message(chat_id=update.effective_chat.id, text="Vocabulary recap stopped. You can start again anytime!")
+                await send_main_menu(update, context)
+        elif data == "try_again":
+            await remove_keyboard(update,context)
+            await send_main_menu(update,context)
+        # else:
+        #     await edit_message_with_fallback(update, context, "I'm sorry, I didn't understand that command.")
+    
+    except Exception as e:
+        error_message = f"An error occurred in button_handler: {str(e)}"
+        print(error_message)
+        error_traceback = traceback.format_exc()
+        print(error_traceback)
+        await error_handler(update, context, error_message)
+async def pronunciation_next(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await pronunciation_practice_start(update, context)
+
+async def pronunciation_get(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    current_sentence = context.user_data.get('current_sentence')
+    if not current_sentence:
+        await update.callback_query.edit_message_text("آسف ليس لدي جملة للتدرب عليها حالياً، دعنا نبدأ من جديد")
+        await pronunciation_practice_start(update, context)
+        return
+
+    user_id = update.effective_user.id
+    user_data = await supabase_select("users", "preferred_accent", "user_id", user_id)
+    preferred_accent = user_data.data[0]['preferred_accent'] if user_data.data else "American"
+
+    # if preferred_accent == "American":
+    #     preferred_accent = "Dan"
+    #     await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="RECORD_VOICE")
+    #     audio_file = await convert_text_to_audio(current_sentence, preferred_accent)
+    # elif preferred_accent == "British":
+    #     preferred_accent = "aura-athena-en"
+    #     audio_file = await deepgram_tts(current_sentence, preferred_accent)
+    preferred_accent = "Dan"
+    await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="RECORD_VOICE")
+    audio_file = await convert_text_to_audio(current_sentence, preferred_accent)
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("حاول مرة أخرى 🔁", callback_data='pronunciation_try_again'),
+         InlineKeyboardButton("التالي ⬅️", callback_data='pronunciation_next')],
+        [InlineKeyboardButton("إلغاء ❌", callback_data='pronunciation_stop')]
+    ])
+    try:
+        with open(audio_file, 'rb') as audio:
+            await update.callback_query.message.reply_voice(audio)
+    except Exception as e:
+        print(e)
+        with open(audio_file, 'rb') as audio:
+            await context.bot.send_voice(chat_id=update.effective_chat.id, voice=audio)
+        # await update.callback_query.message.reply_text(current_sentence)
+    finally:
+        if os.path.exists(audio_file):
+                os.remove(audio_file) 
+    await update.callback_query.message.reply_text(
+        "هذا هو النطق الصحيح ✅، هل تريد المحاولة مرة أخرى أو الإنتقال إلى الكلمة/الجملة التالية؟",
+        reply_markup=keyboard
+    )
+
+async def pronunciation_try_again(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    current_sentence = context.user_data.get('current_sentence')
+    await update.callback_query.edit_message_text(
+        f"حسنًا، لنحاول مرة أخرى. يُرجى تسجيل صوتك وأنت تقول هذه الجملة:\nn{current_sentence}\nn\أرسل رسالتك الصوتية عندما تكون مستعدًا."
+    )
+async def dictionary_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    keyboard = ReplyKeyboardMarkup([
+        # [KeyboardButton("📚 Dictionary")],
+        [KeyboardButton("/stop")]
+    ], resize_keyboard=True)
+    await update.message.reply_text(
+        "أكتب الكلمة التي تريد البحث عنها في القاموس باللغة الإنجليزية (كلمتين حد أقصى)",
+        reply_markup=keyboard
+    )
+    context.user_data['mode'] = 'dictionary'
+    context.user_data['awaiting_word'] = True
+
+async def dictionary_process(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    keyboard = ReplyKeyboardMarkup([
+        [KeyboardButton("/stop")]
+    ], resize_keyboard=True)
+    word = update.message.text.strip().lower()
+    # print("word",word)
+    
+    
+    
+    if len(word.split()) > 2:
+        await update.message.reply_text("الرجاء كتابة كلمتين كحد أقصى", reply_markup=keyboard)
+        context.user_data['awaiting_word'] = True
+        return
+    # Check if all characters are English letters or spaces
+    if not re.match(r'^[a-z\s]+$', word):
+        await update.message.reply_text("الرجاء إدخال الكلمة باللغة الإنجليزية فقط", reply_markup=keyboard)
+        context.user_data['awaiting_word'] = True
+        return
+    # await update.message.reply_text("الرجاء الإنتظار لحظات")
+
+    prompt = f"""Task: you are experienced English teacher and your task is to provide a detailed explanation of the word or phrase '{word}' in both English and Arabic, simulating the depth and precision of a professional translator or a high-quality dictionary. Ensure the explanation is comprehensive and clear for language learners.
+
+Instructions:
+
+- <ins> Meaning (المعنى) : </ins> provide the most common meaning of the word or phrase in Arabic 4 maximum and 1 minimum only the meaning nothing else and should be the true meaning of the word.
+
+- <ins> Definition in English: </ins> Offer a precise, clear, and easy-to-understand definition of the word or phrase.
+
+- <ins> (التعريف باللغة العربية): </ins> Translate the definition into fluent, accurate Arabic, ensuring that it conveys the same meaning and nuances as in English.
+
+- <ins> Word Family: </ins> List all relevant forms of the word, including:
+  • Verb: e.g., imagine
+  • Noun: e.g., imagination
+  • Adjective: e.g., imaginative
+  • Adverb: e.g., imaginatively
+  Include any additional derivatives or inflections if applicable (e.g., plural forms, comparative/superlative forms for adjectives, participles for verbs).
+  
+- <ins> Part of Speech (أجزاء الكلام): </ins> Identify all relevant parts of speech (e.g., noun, verb,adjective, adverb). For each part of speech, provide:
+
+
+- <ins> Definition in English: </ins> A specific definition related to that part of speech.
+
+- <ins> (التعريف باللغة العربية): </ins> A natural Arabic translation of the specific definition.
+
+- <ins> Example (مثال): </ins> Show how the word is used in a sentence only in english.
+- <ins> Usage Examples: </ins> Offer 5 contextual examples that illustrate the word/phrase being used in various sentences. Each sentence should be followed by its Arabic translation.
+for verbs include the other format of the word past, present(ing), and past participle and for Nouns include it in single and plural
+
+- <ins> phrasal verbs (الأفعال المركبة) if possible and their meaning and defination in Arabic with 1 example
+
+- <ins> Synonyms (المرادفات): </ins> List at least 3 synonyms of the word/phrase .
+
+- <ins> Antonyms (المتضادات): </ins> List at least 3 antonyms (Note if the word does not have any antonyms do not write it).
+
+Ensure that both the English and Arabic explanations are easy to follow, accurate, and reflect the nuances of each language.
+Focus on clarity and readability, making it suitable for language learners at various levels.
+
+do not include * or # in the text 
+
+"""
+    prompt += f"\n\nto make it looks better and more organized you can use HTML style format <strong>bold</strong> for bold text this for the definition  , <ins>underline</ins> for underline text this for the meaning in Arabic and titles ,<blockquote> </blockquote> for examples and make sure you accurtlly do that for the examples in English\n\n please make sure to use them properly "
+from supabase import create_client, Client
+import asyncio
+import os
+import re
+import requests
+import json
+import random
+import traceback
+import ast
+import yt_dlp
+from openai import OpenAI
+from telegram import CallbackQuery, Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton,ReplyKeyboardRemove,Poll
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, CallbackQueryHandler
+from telegram.error import BadRequest, NetworkError, TimedOut
+from telegram.error import Forbidden, TelegramError
+from datetime import datetime, timedelta
+from flask import Flask, app
+from telegram.request import HTTPXRequest
+from deepgram import DeepgramClient, PrerecordedOptions, SpeakOptions
+from dotenv import load_dotenv
+from functools import partial
+load_dotenv()
+from openai import AsyncOpenAI
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timezone
+from word_lists import get_all_pronunciation_sentences, get_random_word, get_all_words, get_random_pronunciation_sentence
+import re
+import google.generativeai as genai
+from PIL import Image
+import io
+from collections import deque
+from grammar_exercises import EXERCISES
+from lessons import LESSONS
+from vocab import get_words
+import json
+import ast
+import random
+url: str = "https://ruzcfhezadjscqipzhiw.supabase.co"
+
+supabase_key = os.getenv('SUPABASE_KEY')
+
+key: str= supabase_key
+
+supabase: Client = create_client(url, key)
+# Telegram bot token
+BOT_TOKEN = os.getenv('BOT_TOKEN')
+ADMIN_IDS = [1115038445]
+app = Flask(__name__)
+
+# Health check endpoint
+@app.route('/health', methods=['GET'])
+def health_check():
+    return "OK", 200
+
+
+try:
+    num_cores = os.cpu_count()
+
+    # Create the thread pool
+    executor = ThreadPoolExecutor(max_workers=num_cores)  # Adjust the number of workers as needed
+except Exception as e:
+    print("🚨 executor = ThreadPoolExecutor(max_workers=8)",e)
+    executor = ThreadPoolExecutor(max_workers=8)
+
+# Main menu keyboard
+main_menu_keyboard = ReplyKeyboardMarkup([
+    [KeyboardButton("📚 Dictionary"), KeyboardButton("🔍 Grammar Checker")],
+    [KeyboardButton("✏️ Spelling Checker")]
+], resize_keyboard=True)
+
+
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    username = update.effective_user.username
+    user_data = await supabase_select("users", "*", "user_id", user_id)
+    try:
+        if not user_data.data:
+            # Insert basic user info into the database
+            await supabase_insert("users", {"user_id": user_id, "username": username})
+            # await ask_preferred_accent(update, context)
+            await send_main_menu(update, context)
+        else:
+            context.user_data.clear()
+            await remove_keyboard(update,context)
+            await send_main_menu(update, context)
+    except Exception as e:
+        print(e)
+        context.user_data.clear()
+        await remove_keyboard(update,context)
+        await send_main_menu(update, context)
+async def remove_keyboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    try:
+        chat_id = update.effective_chat.id
+        message_id = update.message.message_id - 1
+        await context.bot.edit_message_reply_markup(
+            chat_id=chat_id,
+            message_id=message_id,
+            reply_markup=None
+        )
+    except Exception as e:
+        
+        # print(f"Error removing keyboard: {e}")
+        try:
+                await update.effective_message.edit_reply_markup(reply_markup=None)
+        except Exception as e:
+                pass
+                # await update.effective_message.delete()
+async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    if not query:
+        await error_handler(update, context, "Invalid callback query")
+        return
+
+    await query.answer()
+    
+    user_id = update.effective_user.id
+    data = query.data
+    
+    try:
+        if data.startswith('language_'):
+            await remove_keyboard(update,context)
+            language = data.split('_')[1]
+            await supabase_update("users", {"language": language}, "user_id", user_id)
+            await ask_english_level(update, context)
+        
+        elif data.startswith('level_'):
+            await remove_keyboard(update,context)
+            level = data.split('_')[1]
+            await supabase_update("users", {"level": level}, "user_id", user_id)
+            await ask_preferred_accent(update, context)
+        
+        elif data.startswith('accent_'):
+            await remove_keyboard(update,context)
+            accent = data.split('_')[1]
+            await supabase_update("users", {"preferred_accent": accent}, "user_id", user_id)
+            await send_main_menu(update, context)
+        elif query.data.startswith('spelling_'):
+            await remove_keyboard(update,context)
+            difficulty = query.data.split('_')[1]
+            print(difficulty)
+            if difficulty == 'continue':
+                await spelling_practice_start(update, context, "Let's try another word. Choose the difficulty:")
+            elif difficulty == 'stop':
+                await stop_spelling(update, context)
+            else:
+                await spelling_practice_process(update, context, difficulty)
+        # You can add more elif blocks here for other button types
+        elif query.data.startswith('learn_'):
+            await handle_learn_word(update, context)
+        elif query.data == 'pronunciation_next':
+            await remove_keyboard(update,context)
+            await pronunciation_next(update, context)
+        elif query.data == 'pronunciation_get':
+            await remove_keyboard(update,context)
+            await pronunciation_get(update, context)
+        elif query.data == 'pronunciation_try_again':
+            await remove_keyboard(update,context)
+            await pronunciation_try_again(update, context)
+        elif query.data == 'pronunciation_stop':
+            await remove_keyboard(update,context)
+            await stop_pronunciation_practice(update, context)
+        elif query.data == 'grammar_check_another':
+            await remove_keyboard(update, context)
+            if context.user_data['grammar_check_queue']:
+                await process_grammar_check_queue(update, context)
+            else:
+                await context.bot.send_message(
+                    chat_id=update.effective_chat.id,
+                    text="يمكنك إرسال المزيد من النصوص أو الصور لتصحيحها. أو إذا انتهيت، يمكنك العودة إلى القائمة الرئيسية."
+                )
+            context.user_data['mode'] = 'grammar_check'
+        elif query.data == 'return_main_menu':
+            await remove_keyboard(update, context)
+            context.user_data.clear()
+            await send_main_menu(update, context)
+        elif query.data.startswith('exercise_'):
+            await handle_exercise_response(update, context)
+        elif query.data == 'grammar_continue':
+            await grammar_lessons_start(update, context)
+        elif query.data == 'return_main_menu':
+            context.user_data.clear()
+            await send_main_menu(update, context)
+        elif query.data in ['more_exercises', 'continue_exercises']:
+            await remove_keyboard(update,context)
+            if context.user_data['exercise_index'] >= len(context.user_data['current_exercises']):
+                # If we've used all current exercises, get new ones
+                topic = context.user_data.get('grammar_topic')
+                subtopic = context.user_data.get('grammar_subtopic')
+                sub_subtopic = context.user_data.get('grammar_sub_subtopic')
+                await send_exercise(query, context, topic, subtopic, sub_subtopic)
+            else:
+                # If we still have exercises, send the next batch
+                await send_next_exercise_batch(query, context)
+        elif query.data == 'return_topics':
+            await remove_keyboard(update,context)
+            await grammar_lessons_start(query, context)
+        # Vocabulary flashcard handling
+        elif data == 'quiz_continue':
+            await remove_keyboard(update,context)
+            await handle_quiz_continue(update,context)
+            
+        elif data == 'quiz_end':
+            await remove_keyboard(update,context)
+            await end_grammar_quiz(context)
+            await send_main_menu(update, context)
+        elif data.startswith('vocab_'):
+            action = data.split('_')[1]
+            print("action",action)
+            # if action in ['know', 'dont']:
+            # word = data.split('_')[2]
+            # print("word",word)
+            if action == 'know':
+                await remove_keyboard(update,context)
+                # Add word to known words
+                word = data.split('_')[2]
+                print("word_know",word)
+                
+                
+                await context.bot.send_message(chat_id=update.effective_chat.id, text=f"رائع! أنت تعرف الكلمة '{word}'. دعنا ننتقل إلى الكلمة التالية.")
+                user_data = await supabase_select("users", "vocab_know", "user_id", user_id)
+                vocab_know = set(user_data.data[0]['vocab_know']) if user_data.data and user_data.data[0]['vocab_know'] else set()
+                vocab_know.add(word)
+                await supabase_update("users", {"vocab_know": list(vocab_know)}, "user_id", user_id)
+                # await query.edit_message_text(f"Great! You know the word '{word}'. Let's move to the next word.")
+                await vocabulary_flashcards(update, context)
+            elif action == 'dont':
+                await remove_keyboard(update,context)
+                word = data.split('_')[3]
+                # print("word_dont",word)
+                # Add word to unknown words
+                user_data = await supabase_select("users", "vocab_dont_know", "user_id", user_id)
+                vocab_dont_know = set(user_data.data[0]['vocab_dont_know']) if user_data.data and user_data.data[0]['vocab_dont_know'] else set()
+                vocab_dont_know.add(word)
+                await supabase_update("users", {"vocab_dont_know": list(vocab_dont_know)}, "user_id", user_id)
+                # Get word definition using LLM
+                prompt = f"You are English teacher and your task is to provide a simple definition including the meaning and an example sentence in English for the word '{word}': follow this template the word:\n its most common meaning/s in Arabic 4 maximum \n\n (Definition: write it in English and translate it to Arabic the definition should be in English and Arabic. do not forget to translate it to arabic) \n\n 1 or 2 Examples: in English \n only this do not write anything else, you should organize the text and make it readable in telegram and do not forget include the Arabic text without the way of pronounce it in english just the arabic text  and you should provide accurate result"
+                prompt += f"to make it looks better and more organized you can use HTML style format <strong>bold</strong> for bold text this for the definition  , <ins>underline</ins> for underline text this for the meaning in Arabic and <blockquote> </blockquote> for examples also make it bold the examples\n\n please make sure to use them properly "
+                await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="TYPING")
+                definition = await unify(prompt)
+                
+                keyboard = [
+                    [InlineKeyboardButton("الكلمة التالية ⬅️", callback_data="vocab_next"),InlineKeyboardButton("إلغاء ❌", callback_data="vocab_stop")],
+                ]
+                reply_markup = InlineKeyboardMarkup(keyboard)
+                await context.bot.send_message(chat_id=update.effective_chat.id, text=f"{definition}",parse_mode="HTML")
+                await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="RECORD_VOICE")
+                file_audio = await convert_text_to_audio(word, "Dan")
+                with open(file_audio, 'rb') as audio:
+                    await context.bot.send_voice(chat_id=update.effective_chat.id, voice=audio,reply_markup=reply_markup,caption=f"نطق الكلمة <u>{word}</u>",parse_mode="HTML")
+                if os.path.exists(file_audio):
+                    os.remove(file_audio)
             elif action == 'next':
                 await remove_keyboard(update,context)
                 await vocabulary_flashcards(update, context)
@@ -596,10 +1028,10 @@ async def spelling_practice_start(update: Update, context: ContextTypes.DEFAULT_
         [KeyboardButton("/stop")]
     ], resize_keyboard=True)
     if update.callback_query:
-        await update.callback_query.edit_message_text(text)
+        await update.callback_query.edit_message_text(text,parse_mode="HTML")
         await update.callback_query.edit_message_reply_markup(reply_markup=keyboard)
     else:
-        await update.message.reply_text(text, reply_markup=keyboard2)
+        await update.message.reply_text(text, reply_markup=keyboard2,parse_mode="HTML")
         await update.message.reply_text("اختر مستوى الصعوبة:", reply_markup=keyboard)
     context.user_data['mode'] = 'spelling_practice'
     # context.user_data['correct_count'] = 0
@@ -710,9 +1142,11 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text == "🗣️ تمارين النطق":
         context.user_data['mode'] = 'pronunciation_practice'
         await pronunciation_practice_start(update, context)
+    
     elif text == "🔍 القواعد":
         main_menu_keyboard = ReplyKeyboardMarkup([
         [KeyboardButton("📚 دروس القواعد"), KeyboardButton("🔍 مصحح القواعد")],
+        [KeyboardButton("🧠 اختبار القواعد")],
         [KeyboardButton("/stop")]
     ], resize_keyboard=True)
         await update.message.reply_text("أختر أحد هذه الخيارات للبدء",reply_markup=main_menu_keyboard)
@@ -754,6 +1188,14 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         context.user_data['grammar_check_queue'] = deque()
     elif text == "📚 دروس القواعد":
             await grammar_lessons_start(update, context)
+    elif text == "🧠 اختبار القواعد":
+        keyboard = ReplyKeyboardMarkup([
+                [KeyboardButton("إنهاء الإختبار")]
+            ], resize_keyboard=True)
+        await update.message.reply_text("أختبار القواعد سوف يبدأ الآن:\nسيتم إرسال 10 أسئلة من مختلف دروس القواعد في اللغة الإنجليزية ولديك 30 ثانية للإجابة على كل سؤال\nبعد نهاية الأسئلة سوف يطلب منك  أختيار الإستمرار في الاختبار أو انهاءه وتلقي النتيجة\n\nكل التوفيق",reply_markup=keyboard)
+        # context.user_data['mode'] = 'grammar_quiz'
+        # context.user_data['quiz_state'] = 'level_selection'
+        await start_grammar_quiz(update,context)
     elif context.user_data.get('grammar_state') == 'topic':
         await grammar_subtopic(update, context)
     elif context.user_data.get('grammar_state') == 'subtopic':
@@ -763,7 +1205,10 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif text in ['More Exercises', 'Return to Topics'] and context.user_data.get('grammar_state') == 'more_exercises':
         await handle_more_exercises(update, context)
     
-    
+    elif text =="إنهاء الإختبار":
+        await remove_keyboard(update,context)
+        await end_grammar_quiz(context)
+        await send_main_menu(update,context)
     elif text == "🔤 المفردات":
         keyboard = ReplyKeyboardMarkup([
             [KeyboardButton("🔄 مراجعة المفردات"), KeyboardButton("🔤 تعلم مفردات جديدة")],
@@ -854,7 +1299,7 @@ async def check_spelling(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     parse_mode="HTML"
                 )
             else:
-                await spelling_practice_start(update, context, f"Sorry, the correct spelling is: {context.user_data['current_word']}")
+                await spelling_practice_start(update, context, f"آسف، التهجئة الصحيحة للجملة هي: <u>{context.user_data['current_word']}</u>")
 
 
 def setup_handlers(application):
@@ -1018,7 +1463,236 @@ async def pronunciation_practice_start(update: Update, context: ContextTypes.DEF
 async def pronunciation_next(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await pronunciation_practice_start(update, context)
 
+async def start_grammar_quiz(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data['quiz_state'] = 'active'
+    context.user_data['quiz_score'] = {'correct': 0, 'incorrect': 0, 'unanswered': 0}
+    context.user_data['quiz_answered'] = set()
+    context.user_data['current_quiz_batch'] = []
+    context.user_data['current_quiz_index'] = 0
+    context.user_data['chat_id'] = update.effective_chat.id
+    context.user_data['question_timer'] = None
+    context.user_data['questions_sent'] = 0
+    context.user_data['total_questions_sent'] = 0
+    context.user_data['total_questions_sent_in_quiz'] = 10
+    context.user_data['available_exercises'] = get_all_exercises()
+    # await send_quiz_batch(context)
+    await send_next_question(context)
 
+async def send_next_question(context: ContextTypes.DEFAULT_TYPE):
+    if context.user_data['questions_sent'] >= 10:
+        await show_continue_or_end(context)
+        return
+
+    max_attempts = 10  # Maximum number of attempts to send a valid question
+
+    while max_attempts > 0 and context.user_data['available_exercises']:
+        exercise = random.choice(context.user_data['available_exercises'])
+        context.user_data['available_exercises'].remove(exercise)
+        await context.bot.send_chat_action(chat_id=context.user_data['chat_id'], action="TYPING")
+        
+        # prompt = f"You will receive an English grammar quiz question. Translate the text before the question into Arabic, ensuring an accurate translation, while keeping the question itself in English. For example: 'Complete the sentence: He ____ be tired after running a marathon.' Here, you would translate 'Complete the sentence:' into Arabic, while the actual question remains in English. If there is no text to translate before the question, keep it in English. Additionally, retain the Arabic phrase (اختر الإجابة الصحيحة:). Please follow these instructions without adding any extra text. you should translate all the text except the main text (the real question) \n\n{exercise['question']}"
+        # # prompt += f"\n\n{exercise['question']}"
+        # print(prompt)
+        # updated_question = await unify(prompt)
+        # print(updated_question)
+        total_questions = context.user_data['total_questions_sent'] + context.user_data['questions_sent'] + 1
+        total_questions_per_quiz = context.user_data['total_questions_sent_in_quiz']
+        try:
+            message = await context.bot.send_poll(
+                chat_id=context.user_data['chat_id'],
+                # question=f"السؤال {context.user_data['questions_sent'] + 1}/10:\n{exercise['question']}",
+                question=f"السؤال {total_questions}/{total_questions_per_quiz}:\n{exercise['question']}",
+                options=exercise['options'],
+                type=Poll.QUIZ,
+                correct_option_id=exercise['correct_option_id'],
+                is_anonymous=False,
+                explanation=exercise.get('explanation', ''),
+                open_period=30  # Set a time limit of 30 seconds per question
+            )
+            
+            context.user_data['current_quiz_question'] = exercise
+            context.user_data['questions_sent'] += 1
+            
+            # Set a timer for the question
+            if context.user_data['question_timer']:
+                context.user_data['question_timer'].cancel()
+            context.user_data['question_timer'] = asyncio.create_task(question_timeout(context))
+            
+            return  # Successfully sent a question, exit the function
+        
+        except BadRequest as e:
+            print(f"Error sending poll: {e}")
+            max_attempts -= 1
+
+    # If we've exhausted all attempts or run out of questions
+    if context.user_data['questions_sent'] < 10:
+        await context.bot.send_message(
+            chat_id=context.user_data['chat_id'],
+            text="عذرًا، لم نتمكن من إرسال المزيد من الأسئلة. سننهي الاختبار الآن."
+        )
+        await end_grammar_quiz(context)
+
+async def send_quiz_batch(context: ContextTypes.DEFAULT_TYPE):
+    all_exercises = get_all_exercises()
+    available_exercises = [ex for ex in all_exercises if ex['id'] not in context.user_data['quiz_answered']]
+    
+    if len(available_exercises) < 10:
+        await end_grammar_quiz(context)
+        return
+
+    context.user_data['current_quiz_batch'] = []
+    context.user_data['current_quiz_index'] = 0
+    
+    questions_sent = 0
+    max_attempts = 50  # To prevent infinite loop in case of persistent errors
+
+    while questions_sent < 10 and max_attempts > 0:
+        if not available_exercises:
+            break  # No more available exercises
+        
+        exercise = random.choice(available_exercises)
+        available_exercises.remove(exercise)  # Remove the chosen exercise to avoid repetition
+        
+        try:
+            message = await context.bot.send_poll(
+                chat_id=context.user_data['chat_id'],
+                question=f"السؤال {questions_sent + 1}/10:\n{exercise['question']}",
+                options=exercise['options'],
+                type=Poll.QUIZ,
+                correct_option_id=exercise['correct_option_id'],
+                is_anonymous=False,
+                explanation=exercise.get('explanation', ''),
+                open_period=30  # Set a time limit of 30 seconds per question
+            )
+            
+            context.user_data['current_quiz_batch'].append(exercise)
+            questions_sent += 1
+            
+            # Set a timer for the question
+            if context.user_data['question_timer']:
+                context.user_data['question_timer'].cancel()
+            context.user_data['question_timer'] = asyncio.create_task(question_timeout(context))
+            
+            # Wait for a short time before sending the next question
+            await asyncio.sleep(1)
+            
+        except BadRequest as e:
+            print(f"Error sending poll: {e}")
+        
+        max_attempts -= 1
+
+    if questions_sent < 10:
+        await context.bot.send_message(
+            chat_id=context.user_data['chat_id'],
+            text="عذرًا، لم نتمكن من إرسال جميع الأسئلة. سننهي الاختبار الآن."
+        )
+        await end_grammar_quiz(context)
+    else:
+        context.user_data['current_quiz_index'] = 0
+        await send_next_question(context)
+
+async def question_timeout(context: ContextTypes.DEFAULT_TYPE):
+    await asyncio.sleep(31)  # Wait for 31 seconds (1 second more than the poll's open_period)
+    if context.user_data['quiz_state'] == 'active':
+        context.user_data['quiz_score']['unanswered'] += 1
+        # context.user_data['current_quiz_index'] += 1
+        context.user_data['quiz_answered'].add(context.user_data['current_quiz_question']['id'])
+        await send_next_question(context)
+def get_all_exercises():
+    all_exercises = []
+    for topic, subtopics in EXERCISES.items():
+        for subtopic, exercises in subtopics.items():
+            if isinstance(exercises, dict):
+                for sub_subtopic, sub_exercises in exercises.items():
+                    for i, exercise in enumerate(sub_exercises):
+                        exercise_id = f"{topic}_{subtopic}_{sub_subtopic}_{i}"
+                        exercise['id'] = exercise_id
+                        all_exercises.append(exercise)
+            else:
+                for i, exercise in enumerate(exercises):
+                    exercise_id = f"{topic}_{subtopic}_{i}"
+                    exercise['id'] = exercise_id
+                    all_exercises.append(exercise)
+    return all_exercises
+
+
+async def handle_quiz_answer(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    answer = update.poll_answer
+    quiz_data = context.user_data.get('current_quiz_question')
+    
+    if not quiz_data or context.user_data['quiz_state'] != 'active':
+        return
+
+    # Cancel the timeout timer
+    if context.user_data['question_timer']:
+        context.user_data['question_timer'].cancel()
+
+    context.user_data['quiz_answered'].add(quiz_data['id'])
+    
+    if answer.option_ids:
+        if answer.option_ids[0] == quiz_data['correct_option_id']:
+            context.user_data['quiz_score']['correct'] += 1
+        else:
+            context.user_data['quiz_score']['incorrect'] += 1
+    else:
+        context.user_data['quiz_score']['unanswered'] += 1
+
+    await send_next_question(context)
+
+async def show_continue_or_end(context: ContextTypes.DEFAULT_TYPE):
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("استمرار ⏩", callback_data='quiz_continue'),
+         InlineKeyboardButton("إنهاء ❌", callback_data='quiz_end')]
+    ])
+    total_questions_per_quiz = context.user_data['total_questions_sent_in_quiz']
+    await context.bot.send_message(
+        chat_id=context.user_data['chat_id'],
+        text=f"لقد أنهيت {total_questions_per_quiz} أسئلة. هل تريد الاستمرار في الاختبار أم إنهائه؟",
+        reply_markup=keyboard
+    )
+
+
+async def handle_quiz_continue(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    await query.delete_message()
+    context.user_data['total_questions_sent'] += context.user_data['questions_sent']
+    context.user_data['questions_sent'] = 0
+    if not context.user_data['available_exercises']:
+        context.user_data['available_exercises'] = get_all_exercises()
+    context.user_data['total_questions_sent_in_quiz'] +=10
+    await send_next_question(context)
+ 
+async def end_grammar_quiz(context: ContextTypes.DEFAULT_TYPE):
+    if context.user_data['question_timer']:
+        context.user_data['question_timer'].cancel()
+    
+    context.user_data['quiz_state'] = 'ended'
+    score = context.user_data['quiz_score']
+    total = score['correct'] + score['incorrect'] + score['unanswered']
+    percentage = (score['correct'] / total) * 100 if total > 0 else 0
+    
+    report = f"""انتهى الاختبار! إليك النتيجة:
+
+الإجابات الصحيحة: {score['correct']}
+الإجابات الخاطئة: {score['incorrect']}
+الأسئلة غير المجابة: {score['unanswered']}
+المجموع: {total}
+النسبة المئوية للإجابات الصحيحة: {percentage:.2f}%
+
+شكرًا على المشاركة في الاختبار!"""
+
+    await context.bot.send_message(
+        chat_id=context.user_data['chat_id'],
+        text=report
+    )
+    
+    # Clear quiz data
+    for key in ['quiz_state', 'quiz_score', 'quiz_answered', 'current_quiz_question', 'chat_id', 'question_timer', 'questions_sent', 'total_questions_sent', 'available_exercises']:
+        context.user_data.pop(key, None)
+    
+    # await send_main_menu(update, context) 
+  
 async def grammar_check_text(update: Update, context: ContextTypes.DEFAULT_TYPE,text=None):
     user_text = text or update.message.text
     
@@ -1311,15 +1985,33 @@ async def send_lesson_content(update: Update, context: ContextTypes.DEFAULT_TYPE
     # Send lesson content
     # await update.message.reply_text(content)
     await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="TYPING")
-    prompt= f"You will be given Grammar lesson on this topic {topic}, {subtopic}, {sub_subtopic} \n\nthis is the content of the lesson {content} \n\n i want you to orgnize the lesson and make is look better by applying HTML style format to make it looks better <strong>bold</strong> for bold text, <ins>underline</ins> for underline text and <blockquote> </blockquote> this for examples. you can use this when it is aprpriate to use it and when it is not important don't you use it you should make it perfectly Note: do not make any changes on the content just apply the new format style and only use these  tags <strong> <ins> <blockquote> and make sure you do it accurtally and perfectly this will be for telegram bot"
+    prompt= f"You will be given a Grammar lesson on this topic {topic}, {subtopic}, {sub_subtopic} \n\nthis is the content of the lesson \n\n{content} \n\n i want you to orgnize the lesson and make is look better by applying HTML style format to make it looks better <strong>bold</strong> for bold text, <ins>underline</ins> for underline text and <blockquote> </blockquote> this for examples. you can use this when it is aprpriate to use it and when it is not important don't you use it you should make it perfectly Note: do not make under any circumstances any changes on the content just apply the new format style and only use these  tags <strong> <ins> <blockquote> and make sure you do it accurtally and perfectly this will be for telegram bot remember only apply the formates and do not do anything else or write addtional text etc.."
     # prompt += f"\n\nyou can use HTML style format to make it looks better <strong>bold</strong> for bold text, <ins>underline</ins> for underline text and <blockquote> </blockquote> this for examples. you can use this when it is aprpriate to use it and when it is not important don't you use it you should make it perfectly"
     lesson = await unify(prompt)
     await send_long_message(update, context, lesson,reply_markup=None)
-    # Send YouTube link
+    # # Send YouTube link
     if youtube_link:
         await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="TYPING")
         await update.message.reply_text(f"{youtube_link}")
-    
+     # Download and send YouTube video
+    # if youtube_link:
+    #     await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="UPLOAD_VIDEO")
+    #     try:
+    #         video_path = await download_youtube_video(youtube_link)
+    #         if video_path and os.path.exists(video_path):
+    #             try:
+    #                 with open(video_path, 'rb') as video_file:
+    #                     await update.message.reply_video(video_file)
+    #             except Exception as e:
+    #                 print(f"Error sending video: {e}")
+    #                 await update.message.reply_text(f"Sorry, I couldn't send the video. Here's the link instead: {youtube_link}")
+    #             finally:
+    #                 os.remove(video_path)  # Clean up the downloaded file
+    #         else:
+    #             await update.message.reply_text(f"Sorry, I couldn't download the video. Here's the link: {youtube_link}")
+    #     except Exception as e:
+    #         print(f"Error in video download process: {e}")
+    #         await update.message.reply_text(f"An error occurred while processing the video. Here's the link: {youtube_link}")
     # Send file
     if file_path:
         try:
@@ -1355,9 +2047,20 @@ def get_exercises(context: ContextTypes.DEFAULT_TYPE, topic, subtopic, sub_subto
     except KeyError:
         print(f"KeyError in get_exercises: topic={topic}, subtopic={subtopic}, sub_subtopic={sub_subtopic}")
         return []
-
-
-
+# async def download_youtube_video(url):
+#     try:
+#         yt = YouTube(url)
+#         stream = yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first()
+        
+#         if stream:
+#             file_path = stream.download()
+#             return file_path
+#         else:
+#             print("No suitable stream found")
+#             return None
+#     except Exception as e:
+#         print(f"Error downloading video: {e}")
+#         return None
 async def send_next_exercise(update: Update, context: ContextTypes.DEFAULT_TYPE):
     exercises = context.user_data['current_exercises']
     index = context.user_data['exercise_index']
@@ -1509,7 +2212,7 @@ async def vocabulary_callback(update: Update, context: ContextTypes.DEFAULT_TYPE
         await supabase_update("users", {"vocab_dont_know": list(vocab_dont_know)}, "user_id", user_id)
 
         # Get word definition using LLM
-        prompt = f"Provide a simple definition and an example sentence for the word '{word}':"
+        prompt = f"You are English teacher and your task is to provide a simple definition including the meaning and an example sentence in English for the word '{word}': follow this template the word:\n its most common meaning/s in Arabic 4 maximum \n\n (Definition: write it in English and translate it to Arabic the definition should be in English and Arabic. do not forget to translate it to arabic) \n\n 1 or 2 Examples: in English \n only this do not write anything else, you should organize the text and make it readable in telegram and do not forget include the Arabic text without the way of pronounce it in english just the arabic text  and you should provide accurate result"
         prompt += f"\n\nto make it looks better and more organized you can use HTML style format <strong>bold</strong> for bold text this for the definition  , <ins>underline</ins> for underline text this for the meaning in Arabic and <blockquote> </blockquote> for examples also make it bold the examples\n\n please make sure to use them properly "
         await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="TYPING")
         definition = await unify(prompt)
@@ -2456,7 +3159,7 @@ async def main():
     photo_handler = MessageHandler(filters.PHOTO, message_handler)
     application.add_handler(photo_handler)
     application.add_handler(CommandHandler('grammar', grammar_lessons_start))
-    
+    application.add_handler(PollAnswerHandler(handle_quiz_answer))
     
     
     voice_handler_instance = MessageHandler(filters.VOICE, audio_handler)
