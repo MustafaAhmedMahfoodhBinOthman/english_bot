@@ -39,7 +39,7 @@ import random
 
 supabase_key = os.getenv('SUPABASE_KEY')
 url: str = "https://uauvrkbcbtofuvwaawmb.supabase.co"
-supabase_key: str=  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVhdXZya2JjYnRvZnV2d2Fhd21iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM1OTYzNDMsImV4cCI6MjA1OTE3MjM0M30.gNiDpBFYSR8M11AjVkrQHnJkCWxX_xjOtpaNxNuBeA8"
+# supabase_key: str=  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVhdXZya2JjYnRvZnV2d2Fhd21iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM1OTYzNDMsImV4cCI6MjA1OTE3MjM0M30.gNiDpBFYSR8M11AjVkrQHnJkCWxX_xjOtpaNxNuBeA8"
 key: str= supabase_key
 
 supabase: Client = create_client(url, key)
@@ -3064,7 +3064,7 @@ async def stop_spelling(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # BOT_TOKEN = "7844510473:AAGaz-6R3nLUZJCtCIb68LfoTLrBULSshvE"
 # BOT_TOKEN = "7515607864:AAHhFH6C82sgNDWjQOr7RwYZBBLJpCYS20k"
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-BOT_TOKEN = "7128619160:AAEVnMd0w0F7bmmT4fcsD2-JCg7XvgcdMEw"
+# BOT_TOKEN = "7128619160:AAEVnMd0w0F7bmmT4fcsD2-JCg7XvgcdMEw"
 async def main():
     print("main")
     request = HTTPXRequest(
