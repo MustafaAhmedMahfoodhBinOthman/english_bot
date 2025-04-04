@@ -39,7 +39,7 @@ import random
 
 supabase_key = os.getenv('SUPABASE_KEY')
 url: str = "https://uauvrkbcbtofuvwaawmb.supabase.co"
-# supabase_key: str=  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVhdXZya2JjYnRvZnV2d2Fhd21iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM1OTYzNDMsImV4cCI6MjA1OTE3MjM0M30.gNiDpBFYSR8M11AjVkrQHnJkCWxX_xjOtpaNxNuBeA8"
+supabase_key: str=  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVhdXZya2JjYnRvZnV2d2Fhd21iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM1OTYzNDMsImV4cCI6MjA1OTE3MjM0M30.gNiDpBFYSR8M11AjVkrQHnJkCWxX_xjOtpaNxNuBeA8"
 key: str= supabase_key
 
 supabase: Client = create_client(url, key)
@@ -2035,7 +2035,23 @@ async def vocabulary_flashcards(update: Update, context: ContextTypes.DEFAULT_TY
         
         # Get user's current vocabulary level
         user_data = await supabase_select("users", "vocab_level, vocab_know, vocab_dont_know", "user_id", user_id)
-        vocab_level = user_data.data[0]['vocab_level'] if user_data.data else "simple"
+        vocab_level = user_data.data[0]['vocab_level'] if user_data.data else None
+        
+        # If no level is set, ask user to choose one
+        if not vocab_level:
+            keyboard = [
+                [InlineKeyboardButton("سهلة (A1 - A2)", callback_data="change_level_simple")],
+                [InlineKeyboardButton("متوسطة (B1 - B2)", callback_data="change_level_medium")],
+                [InlineKeyboardButton("صعبة (B2 - C1)", callback_data="change_level_hard")]
+            ]
+            reply_markup = InlineKeyboardMarkup(keyboard)
+            await context.bot.send_message(
+                chat_id=update.effective_chat.id,
+                text="قبل أن نبدأ، يرجى اختيار مستوى صعوبة المفردات:",
+                reply_markup=reply_markup
+            )
+            return
+            
         vocab_know = set(user_data.data[0]['vocab_know']) if user_data.data and user_data.data[0]['vocab_know'] else set()
         vocab_dont_know = set(user_data.data[0]['vocab_dont_know']) if user_data.data and user_data.data[0]['vocab_dont_know'] else set()
 
@@ -2073,7 +2089,6 @@ async def vocabulary_flashcards(update: Update, context: ContextTypes.DEFAULT_TY
         reply_markup = InlineKeyboardMarkup(keyboard)
         if update.callback_query:
             await context.bot.send_message(chat_id=update.effective_chat.id , text=f"هل تعرف معنى الكلمة <strong><u>({word})</u></strong> ؟", reply_markup=reply_markup,parse_mode="HTML")
-            # await update.callback_query.edit_message_text(f"Do you know the word: {word}?", reply_markup=reply_markup)
         else:
             await update.message.reply_text(f"هل تعرف معنى الكلمة <strong><u>({word})</u></strong> ؟", reply_markup=reply_markup,parse_mode="HTML")
     except Exception as e:
@@ -3049,7 +3064,7 @@ async def stop_spelling(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # BOT_TOKEN = "7844510473:AAGaz-6R3nLUZJCtCIb68LfoTLrBULSshvE"
 # BOT_TOKEN = "7515607864:AAHhFH6C82sgNDWjQOr7RwYZBBLJpCYS20k"
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-# BOT_TOKEN = "7128619160:AAEVnMd0w0F7bmmT4fcsD2-JCg7XvgcdMEw"
+BOT_TOKEN = "7128619160:AAEVnMd0w0F7bmmT4fcsD2-JCg7XvgcdMEw"
 async def main():
     print("main")
     request = HTTPXRequest(
