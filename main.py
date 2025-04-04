@@ -1,4 +1,3 @@
-
 from supabase import create_client, Client
 import asyncio
 import os
@@ -36,10 +35,11 @@ from vocab import get_words
 import json
 import ast
 import random
-url: str = "https://ruzcfhezadjscqipzhiw.supabase.co"
+# url: str = "https://ruzcfhezadjscqipzhiw.supabase.co"
 
 supabase_key = os.getenv('SUPABASE_KEY')
-
+url: str = "https://uauvrkbcbtofuvwaawmb.supabase.co"
+# supabase_key: str=  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVhdXZya2JjYnRvZnV2d2Fhd21iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM1OTYzNDMsImV4cCI6MjA1OTE3MjM0M30.gNiDpBFYSR8M11AjVkrQHnJkCWxX_xjOtpaNxNuBeA8"
 key: str= supabase_key
 
 supabase: Client = create_client(url, key)
@@ -1328,20 +1328,22 @@ async def send_quiz_batch(context: ContextTypes.DEFAULT_TYPE):
 async def question_timeout(context: ContextTypes.DEFAULT_TYPE):
     try:
         await asyncio.sleep(31)  # Wait for 31 seconds (1 second more than the poll's open_period)
-        if "quiz_state" not in context.user_data:
-            context.user_data['quiz_state'] = 'active'
         
-        if context.user_data['quiz_state'] == 'active':
-            context.user_data['quiz_score']['unanswered'] += 1
-            # context.user_data['current_quiz_index'] += 1
-            context.user_data['quiz_answered'].add(context.user_data['current_quiz_question']['id'])
-            await send_next_question(context)
+        # Check if quiz is still active and has required data
+        if ("quiz_state" not in context.user_data or 
+            context.user_data['quiz_state'] != 'active' or
+            'quiz_score' not in context.user_data):
+            return
+        
+        context.user_data['quiz_score']['unanswered'] += 1
+        context.user_data['quiz_answered'].add(context.user_data['current_quiz_question']['id'])
+        await send_next_question(context)
     except Exception as e:
         text = ("🚨 question timeout ",e)
         error_traceback = traceback.format_exc()
         print(error_traceback)
-        raise Exception("question timeout")
-        # await error_handler(update, context, text)
+        # Don't raise exception, just log it
+        print("Question timeout error:", e)
 def get_all_exercises():
     try:
         all_exercises = []
@@ -1432,15 +1434,18 @@ async def handle_quiz_continue(update: Update, context: ContextTypes.DEFAULT_TYP
         await error_handler(update, context, text)
 async def end_grammar_quiz(context: ContextTypes.DEFAULT_TYPE):
     try:
-        if context.user_data['question_timer']:
+        # Cancel any pending timer first
+        if context.user_data.get('question_timer'):
             context.user_data['question_timer'].cancel()
+            context.user_data['question_timer'] = None
         
-        context.user_data['quiz_state'] = 'ended'
-        score = context.user_data['quiz_score']
-        total = score['correct'] + score['incorrect'] + score['unanswered']
-        percentage = (score['correct'] / total) * 100 if total > 0 else 0
-        
-        report = f"""انتهى الاختبار! إليك النتيجة:
+        # Only proceed with end report if we have score data
+        if 'quiz_score' in context.user_data:
+            score = context.user_data['quiz_score']
+            total = score['correct'] + score['incorrect'] + score['unanswered']
+            percentage = (score['correct'] / total) * 100 if total > 0 else 0
+            
+            report = f"""انتهى الاختبار! إليك النتيجة:
 
     الإجابات الصحيحة: {score['correct']}
     الإجابات الخاطئة: {score['incorrect']}
@@ -1450,22 +1455,28 @@ async def end_grammar_quiz(context: ContextTypes.DEFAULT_TYPE):
 
     شكرًا على المشاركة في الاختبار!"""
 
-        await context.bot.send_message(
-            chat_id=context.user_data['chat_id'],
-            text=report
-        )
+            if 'chat_id' in context.user_data:
+                await context.bot.send_message(
+                    chat_id=context.user_data['chat_id'],
+                    text=report
+                )
         
-        # Clear quiz data
-        for key in ['quiz_state', 'quiz_score', 'quiz_answered', 'current_quiz_question', 'chat_id', 'question_timer', 'questions_sent', 'total_questions_sent', 'available_exercises']:
+        # Clear ALL quiz-related data
+        quiz_keys = [
+            'quiz_state', 'quiz_score', 'quiz_answered', 'current_quiz_question',
+            'chat_id', 'question_timer', 'questions_sent', 'total_questions_sent',
+            'available_exercises', 'current_quiz_batch', 'current_quiz_index',
+            'total_questions_sent_in_quiz'
+        ]
+        for key in quiz_keys:
             context.user_data.pop(key, None)
-        
-        # await send_main_menu(update, context) 
+            
     except Exception as e:
-        text = ("🚨 ",e)
+        text = ("🚨 Error ending quiz: ",e)
         error_traceback = traceback.format_exc()
         print(error_traceback)
-        raise Exception("end grammar quiz")
-        # await error_handler(update, context, text)
+        # Log error but don't raise to ensure cleanup still happens
+        print("Error ending quiz:", e)
 async def grammar_check_text(update: Update, context: ContextTypes.DEFAULT_TYPE,text=None):
     
     try:
@@ -3038,6 +3049,7 @@ async def stop_spelling(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # BOT_TOKEN = "7844510473:AAGaz-6R3nLUZJCtCIb68LfoTLrBULSshvE"
 # BOT_TOKEN = "7515607864:AAHhFH6C82sgNDWjQOr7RwYZBBLJpCYS20k"
 BOT_TOKEN = os.getenv("BOT_TOKEN")
+# BOT_TOKEN = "7128619160:AAEVnMd0w0F7bmmT4fcsD2-JCg7XvgcdMEw"
 async def main():
     print("main")
     request = HTTPXRequest(
